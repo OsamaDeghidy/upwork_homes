@@ -67,11 +67,11 @@ export default function Header() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* logo */}
+          {/* ogo */}
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="relative">
               <Image 
-                src="/logo.png" 
+                src="/ogo.png" 
                 alt="A-List Home Pros" 
                 width={64}
                 height={64}
