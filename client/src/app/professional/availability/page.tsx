@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { 
   Clock,
   Calendar,
@@ -9,42 +8,20 @@ import {
   Edit2,
   Trash2,
   Save,
-  X,
-  CheckCircle,
-  AlertCircle,
-  Settings,
-  Globe,
-  MapPin,
-  Bell,
-  RefreshCw,
   Copy,
   Share2,
-  Eye,
-  EyeOff,
-  Toggle,
-  Zap,
-  Moon,
-  Sun,
-  Coffee,
-  Home,
-  Car,
-  Briefcase,
-  Phone,
-  Video,
-  Users,
-  DollarSign,
   Timer,
+  Settings,
   Star,
-  Filter,
-  Search,
-  Download,
-  Upload
+  Download
 } from 'lucide-react';
 
+// Define the type for valid day keys
+type WeekDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
 export default function AvailabilityPage() {
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [showAddTimeSlot, setShowAddTimeSlot] = useState(false);
-  const [editingSlot, setEditingSlot] = useState<any>(null);
+  const [, setSelectedDay] = useState<WeekDay | null>(null);
+  const [, setEditingSlot] = useState<{day: WeekDay; index: number; slot: {start: string; end: string; type: string}} | null>(null);
   const [activeTab, setActiveTab] = useState('schedule');
 
   // Sample availability data
@@ -183,7 +160,7 @@ export default function AvailabilityPage() {
 
   const stats = getAvailabilityStats();
 
-  const handleDayToggle = (day: string) => {
+  const handleDayToggle = (day: WeekDay) => {
     setAvailability(prev => ({
       ...prev,
       weeklySchedule: {
@@ -196,20 +173,7 @@ export default function AvailabilityPage() {
     }));
   };
 
-  const addTimeSlot = (day: string, slot: { start: string; end: string; type: string }) => {
-    setAvailability(prev => ({
-      ...prev,
-      weeklySchedule: {
-        ...prev.weeklySchedule,
-        [day]: {
-          ...prev.weeklySchedule[day],
-          slots: [...prev.weeklySchedule[day].slots, slot]
-        }
-      }
-    }));
-  };
-
-  const removeTimeSlot = (day: string, index: number) => {
+  const removeTimeSlot = (day: WeekDay, index: number) => {
     setAvailability(prev => ({
       ...prev,
       weeklySchedule: {
@@ -374,16 +338,16 @@ export default function AvailabilityPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <button
-                        onClick={() => handleDayToggle(day.key)}
+                        onClick={() => handleDayToggle(day.key as WeekDay)}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                          availability.weeklySchedule[day.key].isAvailable 
+                          availability.weeklySchedule[day.key as WeekDay].isAvailable 
                             ? 'bg-primary-500' 
                             : 'bg-gray-200'
                         }`}
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                            availability.weeklySchedule[day.key].isAvailable 
+                            availability.weeklySchedule[day.key as WeekDay].isAvailable 
                               ? 'translate-x-6' 
                               : 'translate-x-1'
                           }`}
@@ -392,13 +356,13 @@ export default function AvailabilityPage() {
                       <h3 className="font-semibold text-lg text-dark-900">
                         {day.label}
                       </h3>
-                      {!availability.weeklySchedule[day.key].isAvailable && (
+                      {!availability.weeklySchedule[day.key as WeekDay].isAvailable && (
                         <span className="text-sm text-gray-500">Unavailable</span>
                       )}
                     </div>
-                    {availability.weeklySchedule[day.key].isAvailable && (
+                    {availability.weeklySchedule[day.key as WeekDay].isAvailable && (
                       <button
-                        onClick={() => setSelectedDay(day.key)}
+                        onClick={() => setSelectedDay(day.key as WeekDay)}
                         className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center space-x-1"
                       >
                         <Plus className="h-4 w-4" />
@@ -407,9 +371,9 @@ export default function AvailabilityPage() {
                     )}
                   </div>
                   
-                  {availability.weeklySchedule[day.key].isAvailable && (
+                  {availability.weeklySchedule[day.key as WeekDay].isAvailable && (
                     <div className="space-y-2">
-                      {availability.weeklySchedule[day.key].slots.map((slot, index) => (
+                      {availability.weeklySchedule[day.key as WeekDay].slots.map((slot: { start: string; end: string; type: string }, index: number) => (
                         <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center space-x-3">
                             <Clock className="h-4 w-4 text-gray-600" />
@@ -424,13 +388,13 @@ export default function AvailabilityPage() {
                           </div>
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => setEditingSlot({ day: day.key, index, slot })}
+                              onClick={() => setEditingSlot({ day: day.key as WeekDay, index, slot })}
                               className="p-1 text-gray-400 hover:text-primary-500 transition-colors duration-200"
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => removeTimeSlot(day.key, index)}
+                              onClick={() => removeTimeSlot(day.key as WeekDay, index)}
                               className="p-1 text-gray-400 hover:text-red-500 transition-colors duration-200"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -438,7 +402,7 @@ export default function AvailabilityPage() {
                           </div>
                         </div>
                       ))}
-                      {availability.weeklySchedule[day.key].slots.length === 0 && (
+                      {availability.weeklySchedule[day.key as WeekDay].slots.length === 0 && (
                         <p className="text-gray-500 text-sm italic">
                           No time slots set for this day
                         </p>

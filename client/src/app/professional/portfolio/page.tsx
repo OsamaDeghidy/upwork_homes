@@ -10,25 +10,16 @@ import {
   Eye, 
   Heart, 
   Share2, 
-  Download,
   Upload,
   Grid,
   List,
-  Filter,
   Search,
   Star,
   Calendar,
   MapPin,
   DollarSign,
   Award,
-  Users,
-  CheckCircle,
-  Image as ImageIcon,
-  Video,
-  FileText,
-  Settings,
-  TrendingUp,
-  MessageCircle
+  TrendingUp
 } from 'lucide-react';
 
 export default function PortfolioPage() {

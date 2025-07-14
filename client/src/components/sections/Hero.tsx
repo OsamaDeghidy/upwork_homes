@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Search, MapPin, ChevronDown, Shield } from 'lucide-react';
 
 export default function Hero() {
@@ -154,10 +155,12 @@ export default function Hero() {
             <p className="text-sm text-dark-600 font-medium">Trusted by leading companies</p>
             <div className="flex items-center justify-center space-x-12 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-500">
               {trustedCompanies.map((company, index) => (
-                <img
+                <Image
                   key={index}
                   src={company.logo}
                   alt={company.name}
+                  width={80}
+                  height={32}
                   className="h-8 hover:scale-110 transition-transform duration-300"
                 />
               ))}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, Mail, Lock, CheckCircle, Shield, Users, Star } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Shield, Users, Star } from 'lucide-react';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -153,7 +153,7 @@ export default function LoginPage() {
 
             {/* Sign Up Link */}
             <div className="text-center">
-              <span className="text-dark-600">Don't have an account? </span>
+              <span className="text-dark-600">Don&apos;t have an account? </span>
               <Link href="/register" className="text-primary-600 hover:text-primary-700 font-semibold">
                 Sign up now
               </Link>

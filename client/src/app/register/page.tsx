@@ -100,7 +100,7 @@ export default function RegisterPage() {
               }`}
             >
               <Users className={`h-8 w-8 mx-auto mb-2 ${accountType === 'client' ? 'text-primary-500' : 'text-gray-400'}`} />
-              <div className="font-semibold">I'm a Client</div>
+              <div className="font-semibold">I&apos;m a Client</div>
               <div className="text-sm opacity-75">Looking for professionals</div>
             </button>
             <button
@@ -113,7 +113,7 @@ export default function RegisterPage() {
               }`}
             >
               <Shield className={`h-8 w-8 mx-auto mb-2 ${accountType === 'professional' ? 'text-primary-500' : 'text-gray-400'}`} />
-              <div className="font-semibold">I'm a Pro</div>
+              <div className="font-semibold">I&apos;m a Pro</div>
               <div className="text-sm opacity-75">Offering services</div>
             </button>
           </div>
@@ -507,7 +507,7 @@ export default function RegisterPage() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-lg">Quality Guarantee</h4>
-                    <p className="text-yellow-100">Money-back guarantee if you're not satisfied</p>
+                    <p className="text-yellow-100">Money-back guarantee if you&apos;re not satisfied</p>
                   </div>
                 </div>
               </>

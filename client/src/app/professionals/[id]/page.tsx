@@ -11,23 +11,13 @@ import {
   CheckCircle, 
   Shield, 
   Award, 
-  Phone, 
-  Mail, 
-  Globe, 
   Calendar,
-  DollarSign,
-  Users,
-  TrendingUp,
   Heart,
   Share2,
   Flag,
   MessageCircle,
-  Briefcase,
-  Camera,
-  FileText,
   ThumbsUp,
   Eye,
-  Filter,
   Grid,
   List
 } from 'lucide-react';
@@ -51,8 +41,8 @@ export default function ProfessionalProfilePage() {
             "https://images.unsplash.com/photo-1494790108755-2616b612b647?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
     rating: professionalId === '2' ? 5.0 : 
             professionalId === '3' ? 4.8 : 4.9,
-    reviews: professionalId === '2' ? 89 : 
-             professionalId === '3' ? 156 : 127,
+    reviewsCount: professionalId === '2' ? 89 : 
+                  professionalId === '3' ? 156 : 127,
     hourlyRate: professionalId === '2' ? "$95" : 
                 professionalId === '3' ? "$75" : "$85",
     location: professionalId === '2' ? "Miami, FL" : 

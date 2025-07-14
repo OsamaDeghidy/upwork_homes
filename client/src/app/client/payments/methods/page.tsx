@@ -8,115 +8,34 @@ import {
   Plus,
   Edit2,
   Trash2,
-  Check,
   X,
   Shield,
-  Star,
   Building,
   Wallet,
-  Smartphone,
-  Globe,
-  Lock,
-  Eye,
-  EyeOff,
-  Settings,
-  Info,
-  AlertCircle,
   CheckCircle,
   Clock,
-  DollarSign,
-  Percent,
-  Calendar,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Flag,
-  Copy,
-  ExternalLink,
-  RefreshCw,
-  Download,
-  Upload,
-  Save,
-  Bell,
-  Award,
-  Target,
-  TrendingUp,
-  Activity,
-  BarChart3,
-  PieChart,
-  LineChart,
-  Zap,
-  Package,
-  Truck,
-  Construction,
-  Hammer,
-  Wrench,
-  PaintBucket,
-  Lightbulb,
-  Gauge,
-  Scale,
-  Timer,
-  Bookmark,
-  Tag,
-  Archive,
-  Folder,
-  FolderOpen,
-  File,
-  FileText,
-  Image,
-  Video,
-  Mic,
-  Speaker,
-  Headphones,
-  Keyboard,
-  Mouse,
-  Monitor,
-  Tablet,
-  Laptop,
-  Printer,
-  Camera,
-  Home,
-  Briefcase,
-  Users,
-  UserCheck,
-  UserX,
-  UserPlus,
-  UserMinus,
-  Crown,
-  Medal,
-  Trophy,
-  Ribbon,
-  Gift,
-  ShoppingCart,
-  ShoppingBag,
-  Receipt,
-  Banknote,
-  Coins,
-  Calculator,
-  Balance,
-  Thermometer,
-  Battery,
-  Wifi,
-  Signal,
-  Bluetooth,
-  Usb,
-  Plug,
-  Power,
-  Flame,
-  Snowflake,
-  Droplets,
-  Wind,
-  Cloud,
-  Sun,
-  Moon,
-  Umbrella
+  AlertCircle
 } from 'lucide-react';
+
+interface PaymentMethod {
+  id: number;
+  type: string;
+  provider: string;
+  last4?: string;
+  expiryDate?: string;
+  cardholderName?: string;
+  email?: string;
+  accountType?: string;
+  isDefault: boolean;
+  isVerified: boolean;
+  addedDate: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
 
 export default function PaymentMethodsPage() {
   const [showAddMethod, setShowAddMethod] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<any>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [newMethod, setNewMethod] = useState({
     type: 'card',
     cardNumber: '',

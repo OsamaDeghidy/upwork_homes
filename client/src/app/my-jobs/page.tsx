@@ -2,7 +2,61 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Calendar, DollarSign, MapPin, Clock, Star, CheckCircle, AlertCircle, Users, MessageSquare, FileText, Eye, MoreVertical } from 'lucide-react';
+import { Calendar, DollarSign, MapPin, Star, CheckCircle, MessageSquare, FileText, Eye, MoreVertical } from 'lucide-react';
+
+interface Milestone {
+  id: number;
+  title: string;
+  completed: boolean;
+  description?: string;
+  date?: string;
+}
+
+interface Project {
+  id: number;
+  title: string;
+  clientName?: string;
+  clientAvatar?: string;
+  client?: {
+    name: string;
+    avatar: string;
+    rating: number;
+    projectsCompleted?: number;
+    memberSince?: string;
+    location?: string;
+    verified: boolean;
+  };
+  status: string;
+  progress?: number;
+  budget: string;
+  deadline?: string;
+  startDate?: string;
+  description?: string;
+  skills?: string[];
+  milestones?: Milestone[];
+  postedDate?: string;
+  proposalCount?: number;
+  clientRating?: number;
+  projectType?: string;
+  duration?: string;
+  location?: string;
+  category?: string;
+  isUrgent?: boolean;
+  lastActivity?: string;
+  messagesCount?: number;
+  unreadMessages?: number;
+  proposalStatus?: string;
+  proposalAmount?: string;
+  proposalValue?: string;
+  proposalDate?: string;
+  submittedDate?: string;
+  completedDate?: string;
+  rating?: number;
+  feedback?: string;
+  clientReview?: string;
+  competing?: number;
+  timeline?: string;
+}
 
 export default function MyJobsPage() {
   const [activeTab, setActiveTab] = useState('active');
@@ -202,7 +256,7 @@ export default function MyJobsPage() {
     }
   };
 
-  const renderProjectCard = (project: any, type: string) => {
+  const renderProjectCard = (project: Project, type: string) => {
     return (
       <div key={project.id} className="bg-white rounded-2xl shadow-upwork hover:shadow-upwork-lg transition-all duration-300 border border-gray-200 overflow-hidden">
         <div className="p-6">
@@ -222,6 +276,7 @@ export default function MyJobsPage() {
           </div>
 
           {/* Client Info */}
+          {project.client && (
           <div className="flex items-center space-x-3 mb-4">
             <img
               src={project.client.avatar}
@@ -241,6 +296,7 @@ export default function MyJobsPage() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Description */}
           <p className="text-dark-600 leading-relaxed mb-4">{project.description}</p>
@@ -287,7 +343,7 @@ export default function MyJobsPage() {
             <div className="mb-4">
               <h4 className="text-sm font-medium text-dark-900 mb-2">Project Milestones</h4>
               <div className="space-y-2">
-                {project.milestones.slice(0, 3).map((milestone: any) => (
+                {project.milestones.slice(0, 3).map((milestone: Milestone) => (
                   <div key={milestone.id} className="flex items-center space-x-2">
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
                       milestone.completed ? 'bg-green-500' : 'bg-gray-300'
@@ -317,7 +373,7 @@ export default function MyJobsPage() {
                 </div>
                 <span className="text-sm font-medium text-green-700">Client Review</span>
               </div>
-              <p className="text-sm text-green-700 italic">"{project.clientReview}"</p>
+              <p className="text-sm text-green-700 italic">&quot;{project.clientReview}&quot;</p>
             </div>
           )}
 
@@ -338,7 +394,7 @@ export default function MyJobsPage() {
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-4 border-t border-gray-100">
             <div className="flex items-center space-x-4">
-              {project.unreadMessages > 0 && (
+              {project.unreadMessages && project.unreadMessages > 0 && (
                 <div className="flex items-center space-x-1 text-sm text-primary-600">
                   <MessageSquare className="h-4 w-4" />
                   <span className="font-medium">{project.unreadMessages} new messages</span>
@@ -352,12 +408,14 @@ export default function MyJobsPage() {
               >
                 <Eye className="h-4 w-4" />
               </Link>
+              {project.client && (
               <Link
                 href={`/messages?chat=${project.client.name.replace(/\s+/g, '-').toLowerCase()}`}
                 className="p-2 text-gray-600 hover:text-primary-600 border border-gray-300 rounded-lg transition-colors duration-200"
               >
                 <MessageSquare className="h-4 w-4" />
               </Link>
+              )}
               <Link
                 href={`/projects/${project.id}`}
                 className="bg-primary-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors duration-200"
@@ -479,7 +537,7 @@ export default function MyJobsPage() {
                 <FileText className="h-8 w-8 text-gray-400" />
               </div>
               <h3 className="font-semibold text-dark-900 mb-2">No projects found</h3>
-              <p className="text-gray-600 mb-6">You don't have any projects in this category yet.</p>
+              <p className="text-gray-600 mb-6">You don&apos;t have any projects in this category yet.</p>
               <Link
                 href="/find-work"
                 className="bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"

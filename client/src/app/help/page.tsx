@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, HelpCircle, MessageCircle, Phone, Mail } from 'lucide-react';
+import { Search, MessageCircle, Phone, Mail } from 'lucide-react';
 
 export default function HelpPage() {
   const [searchQuery, setSearchQuery] = useState('');

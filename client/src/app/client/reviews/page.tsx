@@ -5,122 +5,42 @@ import Link from 'next/link';
 import { 
   Star,
   Plus,
-  Filter,
-  Search,
-  Calendar,
-  User,
-  MapPin,
-  MessageCircle,
-  Edit2,
-  Trash2,
-  Eye,
-  CheckCircle,
-  Clock,
-  AlertCircle,
   ArrowLeft,
+  CheckCircle,
+  Edit2,
   Share2,
-  Download,
-  Image as ImageIcon,
-  Upload,
-  Camera,
-  X,
-  Send,
   ThumbsUp,
   ThumbsDown,
-  Flag,
-  Award,
-  Shield,
-  Target,
-  TrendingUp,
-  Heart,
-  Bookmark,
-  Tag,
-  FileText,
-  Phone,
-  Mail,
-  Globe,
-  ExternalLink,
-  Copy,
-  RefreshCw,
-  Save,
-  Info,
-  HelpCircle,
-  Settings,
-  Bell,
-  Archive,
-  Folder,
-  FolderOpen,
-  File,
-  Video,
-  Mic,
-  Speaker,
-  Headphones,
-  Keyboard,
-  Mouse,
-  Monitor,
-  Smartphone,
-  Tablet,
-  Laptop,
-  Printer,
-  Camera as CameraIcon,
-  Home,
-  Building,
-  Briefcase,
-  Users,
-  UserCheck,
-  UserX,
-  UserPlus,
-  UserMinus,
-  Crown,
-  Medal,
-  Trophy,
-  Ribbon,
-  Gift,
-  Package,
-  ShoppingCart,
-  ShoppingBag,
-  CreditCard,
-  Wallet,
-  Receipt,
-  Banknote,
-  Coins,
-  DollarSign,
-  Percent,
-  Calculator,
-  Scale,
-  Balance,
-  Gauge,
-  Meter,
-  Thermometer,
-  Battery,
-  Wifi,
-  Signal,
-  Bluetooth,
-  Usb,
-  Plug,
-  Power,
-  Zap,
-  Flame,
-  Snowflake,
-  Droplets,
-  Wind,
-  Cloud,
-  Sun,
-  Moon,
-  Umbrella
+  User,
+  Eye,
+  MessageCircle,
+  X,
+  Camera,
+  Send,
+  Search
 } from 'lucide-react';
+
+interface Project {
+  id: number;
+  name: string;
+  professionalName: string;
+  professionalAvatar: string;
+  projectType: string;
+  completedDate: string;
+  canReview: boolean;
+}
 
 export default function ClientReviewsPage() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddReviewModal, setShowAddReviewModal] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [newReview, setNewReview] = useState({
     rating: 5,
     title: '',
     comment: '',
     wouldRecommend: true,
-    images: []
+    images: [] as { id: number; url: string; name: string; }[]
   });
 
   // Sample reviews data
@@ -255,13 +175,6 @@ export default function ClientReviewsPage() {
 
   const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
   const totalReviews = reviews.length;
-  const ratingDistribution = {
-    5: reviews.filter(r => r.rating === 5).length,
-    4: reviews.filter(r => r.rating === 4).length,
-    3: reviews.filter(r => r.rating === 3).length,
-    2: reviews.filter(r => r.rating === 2).length,
-    1: reviews.filter(r => r.rating === 1).length
-  };
 
   const renderStars = (rating: number, size: string = 'h-4 w-4', interactive: boolean = false, onRatingChange?: (rating: number) => void) => {
     const stars = [];
@@ -280,7 +193,7 @@ export default function ClientReviewsPage() {
     return stars;
   };
 
-  const handleAddReview = (project: any) => {
+  const handleAddReview = (project: Project) => {
     setSelectedProject(project);
     setShowAddReviewModal(true);
   };
@@ -707,7 +620,7 @@ export default function ClientReviewsPage() {
                   Add Photos (Optional)
                 </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  <CameraIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                   <p className="text-sm text-gray-600 mb-2">Upload photos of the completed work</p>
                   <label className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 cursor-pointer">
                     Choose Photos

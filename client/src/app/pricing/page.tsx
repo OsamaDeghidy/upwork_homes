@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle, Star, Crown, Zap, Shield, Phone, Home, Users, Settings, Award, Target, Briefcase, Hammer, Wrench } from 'lucide-react';
+import { CheckCircle, Star, Crown, Zap, Shield, Phone, Home, Users, Settings } from 'lucide-react';
 
 export default function PricingPage() {
   const subscriptionPlans = [
@@ -285,7 +285,7 @@ export default function PricingPage() {
               How does the Stripe integration work?
             </h3>
             <p className="text-gray-600">
-              All subscriptions are processed through Stripe, ensuring secure and reliable payment processing. You'll receive automatic invoices and can manage your subscription through your dashboard.
+              All subscriptions are processed through Stripe, ensuring secure and reliable payment processing. You&apos;ll receive automatic invoices and can manage your subscription through your dashboard.
             </p>
           </div>
 
@@ -303,7 +303,7 @@ export default function PricingPage() {
               What happens if I cancel my subscription?
             </h3>
             <p className="text-gray-600">
-              You can cancel your subscription at any time. You'll continue to have access to your plan features until the end of your current billing period.
+              You can cancel your subscription at any time. You&apos;ll continue to have access to your plan features until the end of your current billing period.
             </p>
           </div>
         </div>

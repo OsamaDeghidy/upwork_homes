@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Menu, X, ChevronDown, Bell, User, Briefcase, Users, MessageCircle, Settings, Plus, Crown, Search, BarChart3, DollarSign, Heart, FileText, Home, Info, Phone, HelpCircle, Calendar, Clock, CheckSquare, Timer } from 'lucide-react';
+import Image from 'next/image';
+import { Menu, X, Bell, User, Briefcase, Users, MessageCircle, Settings, Plus, Search, BarChart3, DollarSign, Heart, FileText, Home, Info, Phone, HelpCircle, Calendar, Clock, CheckSquare, Timer } from 'lucide-react';
 import { getMainNavRoutes, type UserRole } from '@/lib/routes';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const pathname = usePathname();
   
   // For demo purposes, we'll simulate user role detection
@@ -26,7 +26,7 @@ export default function Header() {
   const navigationRoutes = getMainNavRoutes(userRole);
 
   // Icon mapping
-  const iconMap: { [key: string]: React.ComponentType<any> } = {
+  const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
     'BarChart3': BarChart3,
     'Plus': Plus,
     'Briefcase': Briefcase,
@@ -54,11 +54,7 @@ export default function Header() {
     icon: route.icon ? iconMap[route.icon] || Users : Users
   }));
 
-  const userNavigation = [
-    { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Settings', href: '/settings', icon: Settings },
-    { name: 'Sign Out', href: '/logout' },
-  ];
+
 
   const isActivePage = (href: string) => {
     return pathname === href;
@@ -74,9 +70,11 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="relative">
-              <img 
+              <Image 
                 src="/logo.png" 
                 alt="A-List Home Pros" 
+                width={64}
+                height={64}
                 className="h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
               />
             </div>

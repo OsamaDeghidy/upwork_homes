@@ -8,36 +8,83 @@ import {
   Paperclip, 
   Phone, 
   Video, 
-  MoreVertical, 
   Star, 
   CheckCircle, 
   Clock, 
   Image, 
-  File, 
   Calendar,
   MapPin,
   DollarSign,
-  User,
   Briefcase,
-  AlertCircle,
-  Eye,
-  Filter,
-  Plus,
-  Archive,
-  Pin,
-  Trash2,
-  Settings,
   MessageSquare,
   CalendarPlus,
-  Timer,
-  FileText,
-  Download,
-  Upload,
-  Bookmark,
-  Bell,
   X,
   Flag
 } from 'lucide-react';
+
+interface ProjectInfo {
+  id: number;
+  name: string;
+  status: string;
+  progress: number;
+  budget: string;
+  dueDate: string;
+  location: string;
+  priority: string;
+}
+
+interface TimeSlot {
+  start: string;
+  end: string;
+}
+
+interface DaySchedule {
+  isAvailable: boolean;
+  slots: TimeSlot[];
+}
+
+interface WeeklySchedule {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
+interface Availability {
+  timezone: string;
+  bufferTime: number;
+  weeklySchedule: WeeklySchedule;
+}
+
+interface Conversation {
+  id: number;
+  name: string;
+  title: string;
+  avatar: string;
+  lastMessage: string;
+  timestamp: string;
+  unread: number;
+  online: boolean;
+  verified: boolean;
+  project: ProjectInfo;
+  rating: number;
+  completedProjects: number;
+  responseTime: string;
+  skills: string[];
+  availability: Availability;
+}
+
+interface Professional {
+  id: number;
+  name: string;
+  title: string;
+  avatar: string;
+  rating: number;
+  availability: Availability;
+}
 
 export default function MessagesPage() {
   const [selectedChat, setSelectedChat] = useState(1);
@@ -45,8 +92,7 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [selectedConversationForSchedule, setSelectedConversationForSchedule] = useState<any>(null);
-  const [showProjectDetails, setShowProjectDetails] = useState(true);
+  const [selectedConversationForSchedule, setSelectedConversationForSchedule] = useState<Conversation | null>(null);
 
   // Enhanced conversations data with project details
   const conversations = [
@@ -280,7 +326,7 @@ export default function MessagesPage() {
     }
   };
 
-  const handleScheduleAppointment = (conversation: any) => {
+  const handleScheduleAppointment = (conversation: Conversation) => {
     setSelectedConversationForSchedule(conversation);
     setShowScheduleModal(true);
   };
@@ -313,7 +359,7 @@ export default function MessagesPage() {
   });
 
   // Helper function to get available time slots for a specific date
-  const getAvailableTimeSlots = (professional: any, selectedDate: string) => {
+  const getAvailableTimeSlots = (professional: Professional, selectedDate: string) => {
     if (!professional.availability || !selectedDate) return [];
     
     const date = new Date(selectedDate);
@@ -321,7 +367,7 @@ export default function MessagesPage() {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayName = dayNames[dayIndex];
     
-    const daySchedule = professional.availability.weeklySchedule[dayName];
+    const daySchedule = professional.availability.weeklySchedule[dayName as keyof WeeklySchedule];
     if (!daySchedule || !daySchedule.isAvailable) return [];
     
     const timeSlots = [];
@@ -804,7 +850,7 @@ export default function MessagesPage() {
                 <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                   <option>Project Site</option>
                   <option>Video Call</option>
-                  <option>Professional's Office</option>
+                  <option>Professional&apos;s Office</option>
                   <option>Other Location</option>
                 </select>
               </div>

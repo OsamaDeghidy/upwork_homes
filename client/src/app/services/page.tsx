@@ -142,7 +142,7 @@ export default function ServicesPage() {
               Need a Custom Service?
             </h2>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Don't see exactly what you're looking for? Post your project and get proposals from professionals 
+              Don&apos;t see exactly what you&apos;re looking for? Post your project and get proposals from professionals 
               who specialize in your specific needs.
             </p>
             <Link

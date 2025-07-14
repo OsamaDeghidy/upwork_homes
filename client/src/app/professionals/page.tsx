@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Star, CheckCircle, Heart, Filter, DollarSign, Clock, Users, Award, Briefcase, Phone, Mail, Shield, Map, Grid3x3 } from 'lucide-react';
+import { Search, MapPin, Star, CheckCircle, Heart, Filter, DollarSign, Clock, Award, Mail, Map, Grid3x3 } from 'lucide-react';
 
 export default function ProfessionalsPage() {
   const [searchQuery, setSearchQuery] = useState('');

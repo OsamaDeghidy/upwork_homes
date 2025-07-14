@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Calendar, Shield, Star, Plus, Users, CheckCircle, ArrowRight } from 'lucide-react';
+import { Search, Calendar, Shield, Star, Plus, Users, CheckCircle } from 'lucide-react';
 
 export default function HowItWorksPage() {
   const steps = [
@@ -91,7 +91,7 @@ export default function HowItWorksPage() {
               Why Choose A-List Home Pros?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We've built the most trusted platform for home improvement projects with features that protect and empower both homeowners and professionals.
+              We&apos;ve built the most trusted platform for home improvement projects with features that protect and empower both homeowners and professionals.
             </p>
           </div>
 

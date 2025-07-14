@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, Award, Shield, Target, Heart, CheckCircle } from 'lucide-react';
+import { Award, Shield, Target, Heart } from 'lucide-react';
 
 export default function AboutPage() {
   const stats = [
@@ -44,7 +44,7 @@ export default function AboutPage() {
               About A-List Home Pros
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              We're revolutionizing how homeowners connect with trusted professionals. 
+              We&apos;re revolutionizing how homeowners connect with trusted professionals. 
               Our mission is to make home improvement projects stress-free, transparent, and successful.
             </p>
           </div>
@@ -84,7 +84,7 @@ export default function AboutPage() {
                   quality, trust, and transparency would be the foundation of every interaction.
                 </p>
                 <p>
-                  Today, we've grown to become the leading platform connecting homeowners with top-rated 
+                  Today, we&apos;ve grown to become the leading platform connecting homeowners with top-rated 
                   professionals across the country. Our commitment to excellence and customer satisfaction 
                   remains at the heart of everything we do.
                 </p>
@@ -141,7 +141,7 @@ export default function AboutPage() {
               Meet Our Team
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We're a passionate team of professionals dedicated to making home improvement easier for everyone.
+              We&apos;re a passionate team of professionals dedicated to making home improvement easier for everyone.
             </p>
           </div>
 
@@ -185,8 +185,8 @@ export default function AboutPage() {
               Ready to join our community?
             </h2>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Whether you're a homeowner looking for professionals or a professional looking to grow your business, 
-              we're here to help you succeed.
+              Whether you&apos;re a homeowner looking for professionals or a professional looking to grow your business, 
+              we&apos;re here to help you succeed.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link

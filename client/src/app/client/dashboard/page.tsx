@@ -1,35 +1,21 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
-  BarChart3, 
   Users, 
   Briefcase, 
   DollarSign, 
   Plus, 
   Calendar, 
-  MessageCircle,
   Star,
-  CheckCircle,
   Clock,
-  AlertCircle,
   TrendingUp,
-  Eye,
-  Heart,
-  FileText,
-  Filter,
-  Search,
-  Bell,
   ChevronRight,
-  MapPin,
-  Award,
-  Shield
+  MapPin
 } from 'lucide-react';
 
 export default function ClientDashboard() {
-  const [selectedPeriod, setSelectedPeriod] = useState('30');
-
   // بيانات وهمية للإحصائيات
   const stats = [
     { 
@@ -63,7 +49,7 @@ export default function ClientDashboard() {
       label: 'Projects Completed', 
       value: '12', 
       change: '+4 from last month',
-      icon: CheckCircle, 
+      icon: Star, 
       color: 'text-primary-600',
       bgColor: 'bg-primary-50',
       trend: 'up'
@@ -206,7 +192,7 @@ export default function ClientDashboard() {
                 Welcome back, John! 👋
               </h1>
               <p className="text-gray-600 mt-1">
-                Here's what's happening with your projects today
+                Here&apos;s what&apos;s happening with your projects today
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -267,10 +253,12 @@ export default function ClientDashboard() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <img
+                        <Image
                           src={project.professionalAvatar}
                           alt={project.professional}
-                          className="w-12 h-12 rounded-full object-cover"
+                          width={48}
+                          height={48}
+                          className="rounded-full object-cover"
                         />
                         <div>
                           <h3 className="font-semibold text-dark-900">{project.title}</h3>
@@ -366,10 +354,12 @@ export default function ClientDashboard() {
                       message.unread ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'
                     }`}
                   >
-                    <img
+                    <Image
                       src={message.avatar}
                       alt={message.from}
-                      className="w-10 h-10 rounded-full object-cover"
+                      width={40}
+                      height={40}
+                      className="rounded-full object-cover"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
@@ -407,10 +397,12 @@ export default function ClientDashboard() {
                     key={professional.id}
                     className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50"
                   >
-                    <img
+                    <Image
                       src={professional.avatar}
                       alt={professional.name}
-                      className="w-12 h-12 rounded-full object-cover"
+                      width={48}
+                      height={48}
+                      className="rounded-full object-cover"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">

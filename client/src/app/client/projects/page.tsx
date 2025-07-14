@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
-  Filter, 
   Search, 
   Grid, 
   List, 
@@ -11,16 +11,8 @@ import {
   MapPin, 
   DollarSign, 
   Star, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
   MessageCircle, 
-  Eye, 
-  Edit2, 
-  Trash2, 
   Plus,
-  ChevronDown,
-  Users,
   Briefcase
 } from 'lucide-react';
 
@@ -366,10 +358,11 @@ export default function ClientProjectsPage() {
                 {/* Project Image */}
                 {project.images.length > 0 && (
                   <div className="relative h-48 bg-gray-200">
-                    <img
+                    <Image
                       src={project.images[0]}
                       alt={project.title}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                     <div className="absolute top-4 right-4 flex space-x-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
@@ -395,10 +388,12 @@ export default function ClientProjectsPage() {
 
                   {/* Professional Info */}
                   <div className="flex items-center space-x-3 mb-4">
-                    <img
+                    <Image
                       src={project.professional.avatar}
                       alt={project.professional.name}
-                      className="w-8 h-8 rounded-full object-cover"
+                      width={32}
+                      height={32}
+                      className="rounded-full object-cover"
                     />
                     <div>
                       <p className="font-medium text-dark-900 text-sm">
@@ -494,10 +489,12 @@ export default function ClientProjectsPage() {
 
                       <div className="flex items-center space-x-6 mb-3">
                         <div className="flex items-center space-x-2">
-                          <img
+                          <Image
                             src={project.professional.avatar}
                             alt={project.professional.name}
-                            className="w-6 h-6 rounded-full object-cover"
+                            width={24}
+                            height={24}
+                            className="rounded-full object-cover"
                           />
                           <span className="text-sm text-gray-600">{project.professional.name}</span>
                         </div>

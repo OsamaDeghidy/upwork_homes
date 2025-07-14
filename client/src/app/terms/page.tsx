@@ -13,7 +13,7 @@ export default function TermsPage() {
               Last updated: January 2024
             </p>
             <p className="text-gray-600 leading-relaxed">
-              These terms of service outline the rules and regulations for the use of A-List Home Professionals' website and services.
+              These terms of service outline the rules and regulations for the use of A-List Home Professionals&apos; website and services.
             </p>
             <p className="text-gray-500 mt-8">
               Detailed terms and conditions will be available soon. For questions, please contact our support team.

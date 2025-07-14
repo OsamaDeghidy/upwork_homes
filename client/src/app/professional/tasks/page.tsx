@@ -1,63 +1,83 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { 
   CheckSquare,
-  Square,
   Plus,
   Edit2,
   Trash2,
   Calendar,
   Clock,
-  User,
   AlertCircle,
   CheckCircle,
-  XCircle,
   Flag,
-  Filter,
   Search,
   MoreVertical,
-  Tag,
   MessageCircle,
-  FileText,
-  Image,
-  Video,
   Paperclip,
-  Star,
-  Eye,
-  Settings,
-  RefreshCw,
-  Download,
-  Upload,
-  Copy,
-  Share2,
-  Bell,
-  Target,
-  TrendingUp,
-  BarChart3,
-  PieChart,
-  Activity,
-  Award,
-  Briefcase,
-  Users,
-  MapPin,
-  Phone,
-  Mail,
-  DollarSign,
-  Timer,
-  Save,
   X,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
-  ArrowRight,
-  ArrowUp,
   ArrowDown,
-  Zap,
-  Flame,
-  CircleDot
+  CircleDot,
+  Activity
 } from 'lucide-react';
+
+interface ChecklistItem {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+interface TaskData {
+  id: number;
+  title: string;
+  description: string;
+  project: string;
+  client: string;
+  dueDate: string;
+  priority: string;
+  status: string;
+  progress?: number;
+  checklist?: ChecklistItem[];
+  tags?: string[];
+  assignee?: string;
+  assignedTo?: string;
+  createdDate?: string;
+  comments?: { id: number; author: string; text: string; date: string; }[];
+  attachments?: { id: number; name: string; type: string; size: string; }[];
+  estimatedHours?: number;
+  actualHours?: number;
+  category?: string;
+  dependencies?: string[];
+}
+
+interface Task {
+  id?: number;
+  title: string;
+  description: string;
+  project: string;
+  client: string;
+  dueDate: string;
+  priority: string;
+  status: string;
+  progress?: number;
+  checklist?: ChecklistItem[];
+  tags?: string[];
+  assignee?: string;
+  assignedTo?: string;
+  createdDate?: string;
+  comments?: { id: number; author: string; text: string; date: string; }[];
+  attachments?: { id: number; name: string; type: string; size: string; }[];
+  estimatedHours?: number;
+  actualHours?: number;
+  category?: string;
+  dependencies?: string[];
+  subtasks?: {
+    id: number;
+    title: string;
+    completed: boolean;
+  }[];
+  notes?: string;
+}
 
 export default function TaskManagementPage() {
   const [selectedProject, setSelectedProject] = useState('all');
@@ -65,11 +85,11 @@ export default function TaskManagementPage() {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
-  const [editingTask, setEditingTask] = useState<any>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [sortBy, setSortBy] = useState('priority');
 
   // Sample tasks data
-  const [tasks, setTasks] = useState([
+  const [tasks, setTasks] = useState<TaskData[]>([
     {
       id: 1,
       title: 'Install Kitchen Cabinets',
@@ -255,7 +275,9 @@ export default function TaskManagementPage() {
       case 'dueDate':
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       case 'created':
-        return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
+        const aCreated = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+        const bCreated = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+        return bCreated - aCreated;
       case 'status':
         return a.status.localeCompare(b.status);
       default:
@@ -284,14 +306,6 @@ export default function TaskManagementPage() {
     ));
   };
 
-  const updateTaskStatus = (taskId: number, newStatus: string) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, status: newStatus }
-        : task
-    ));
-  };
-
   const getTasksByStatus = (status: string) => {
     return sortedTasks.filter(task => task.status === status);
   };
@@ -309,9 +323,9 @@ export default function TaskManagementPage() {
     }
   };
 
-  const getCompletionPercentage = (task: any) => {
-    if (task.checklist.length === 0) return 0;
-    const completed = task.checklist.filter((item: any) => item.completed).length;
+  const getCompletionPercentage = (task: TaskData) => {
+    if (!task.checklist || task.checklist.length === 0) return 0;
+    const completed = task.checklist.filter((item: ChecklistItem) => item.completed).length;
     return Math.round((completed / task.checklist.length) * 100);
   };
 
@@ -506,7 +520,7 @@ export default function TaskManagementPage() {
                           {new Date(task.dueDate).toLocaleDateString()}
                         </span>
                       </div>
-                      {task.checklist.length > 0 && (
+                      {task.checklist && task.checklist.length > 0 && (
                         <div className="mb-3">
                           <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
                             <span>Progress</span>
@@ -522,13 +536,13 @@ export default function TaskManagementPage() {
                       )}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          {task.attachments.length > 0 && (
+                          {task.attachments && task.attachments.length > 0 && (
                             <div className="flex items-center space-x-1 text-xs text-gray-500">
                               <Paperclip className="h-3 w-3" />
                               <span>{task.attachments.length}</span>
                             </div>
                           )}
-                          {task.comments.length > 0 && (
+                          {task.comments && task.comments.length > 0 && (
                             <div className="flex items-center space-x-1 text-xs text-gray-500">
                               <MessageCircle className="h-3 w-3" />
                               <span>{task.comments.length}</span>
@@ -536,7 +550,7 @@ export default function TaskManagementPage() {
                           )}
                         </div>
                         <div className="flex items-center space-x-1">
-                          {task.tags.slice(0, 2).map(tag => (
+                          {task.tags && task.tags.slice(0, 2).map(tag => (
                             <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                               {tag}
                             </span>
@@ -592,7 +606,7 @@ export default function TaskManagementPage() {
                       <span>Project: {task.project}</span>
                       <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
                       <span>Client: {task.client}</span>
-                      {task.checklist.length > 0 && (
+                      {task.checklist && task.checklist.length > 0 && (
                         <span>Progress: {getCompletionPercentage(task)}%</span>
                       )}
                     </div>
@@ -807,7 +821,7 @@ export default function TaskManagementPage() {
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.target as HTMLFormElement);
-              const updatedTask = {
+              const updatedTask: TaskData = {
                 ...editingTask,
                 title: formData.get('title') as string,
                 description: formData.get('description') as string,
@@ -820,7 +834,7 @@ export default function TaskManagementPage() {
                 actualHours: Number(formData.get('actualHours')),
                 tags: ((formData.get('tags') as string) || '').split(',').map(tag => tag.trim()).filter(tag => tag),
                 notes: formData.get('notes') as string
-              };
+              } as TaskData;
               setTasks(prev => prev.map(task => 
                 task.id === editingTask.id ? updatedTask : task
               ));
@@ -972,13 +986,13 @@ export default function TaskManagementPage() {
                   Checklist
                 </label>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {editingTask.checklist?.map((item, index) => (
+                  {editingTask.checklist && editingTask.checklist.map((item: ChecklistItem, index: number) => (
                     <div key={item.id} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         defaultChecked={item.completed}
                         onChange={(e) => {
-                          const updatedChecklist = [...editingTask.checklist];
+                          const updatedChecklist = [...(editingTask.checklist || [])];
                           updatedChecklist[index].completed = e.target.checked;
                           setEditingTask({...editingTask, checklist: updatedChecklist});
                         }}

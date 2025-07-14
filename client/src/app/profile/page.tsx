@@ -17,8 +17,6 @@ import {
   Settings,
   Bell,
   CreditCard,
-  FileText,
-  Users,
   TrendingUp,
   CheckCircle
 } from 'lucide-react';

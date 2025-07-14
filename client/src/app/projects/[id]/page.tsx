@@ -23,7 +23,6 @@ import {
   Bookmark,
   MessageCircle,
   Eye,
-  ThumbsUp,
   AlertCircle
 } from 'lucide-react';
 

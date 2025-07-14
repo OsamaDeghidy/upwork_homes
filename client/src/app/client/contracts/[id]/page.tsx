@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { 
   ArrowLeft,
@@ -11,104 +12,21 @@ import {
   Edit2,
   CheckCircle,
   Clock,
-  AlertCircle,
-  DollarSign,
-  Calendar,
-  MapPin,
-  User,
-  Shield,
-  Award,
-  Star,
-  TrendingUp,
-  XCircle,
-  Users,
-  MessageCircle,
   CreditCard,
-  Receipt,
-  Settings,
   Printer,
   Share2,
   Plus,
-  Minus,
-  Mail,
+  Star,
+  MessageCircle,
   Phone,
-  Globe,
-  ExternalLink,
-  Copy,
-  RefreshCw,
-  Save,
-  X,
-  Check,
-  Info,
-  HelpCircle,
-  Target,
-  Activity,
-  Zap,
-  Package,
-  Truck,
-  Construction,
-  Hammer,
-  Wrench,
-  PaintBucket,
-  Lightbulb,
-  Gauge,
-  Scale,
-  Percent,
-  Timer,
+  Mail,
+  Calendar,
   Flag,
-  Bookmark,
-  Tag,
-  Archive,
-  Folder,
-  FolderOpen,
+  Target,
   File,
-  Image,
-  Video,
-  Mic,
-  Speaker,
-  Headphones,
-  Keyboard,
-  Mouse,
-  Monitor,
-  Smartphone,
-  Tablet,
-  Laptop,
-  Printer as PrinterIcon,
-  Camera,
-  Home,
-  Building,
-  Briefcase,
-  UserCheck,
-  UserX,
-  UserPlus,
-  UserMinus,
-  Crown,
-  Medal,
-  Trophy,
-  Ribbon,
-  Gift,
-  ShoppingCart,
-  ShoppingBag,
-  Wallet,
-  Banknote,
-  Coins,
-  Calculator,
-  Thermometer,
-  Battery,
-  Wifi,
-  Signal,
-  Bluetooth,
-  Usb,
-  Plug,
-  Power,
-  Flame,
-  Snowflake,
-  Droplets,
-  Wind,
-  Cloud,
-  Sun,
-  Moon,
-  Umbrella
+  Check,
+  Timer,
+  Receipt
 } from 'lucide-react';
 
 export default function ContractDetailPage() {
@@ -116,8 +34,6 @@ export default function ContractDetailPage() {
   const contractId = params.id as string;
 
   const [activeTab, setActiveTab] = useState('overview');
-  const [showSignModal, setShowSignModal] = useState(false);
-  const [showAmendmentModal, setShowAmendmentModal] = useState(false);
 
   // Sample contract data (in real app, this would come from API based on contractId)
   const contract = {
@@ -351,20 +267,7 @@ export default function ContractDetailPage() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Active':
-        return <CheckCircle className="h-4 w-4 text-blue-600" />;
-      case 'Completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'Pending':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'Cancelled':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-600" />;
-    }
-  };
+
 
   const totalPaid = contract.milestones.filter(m => m.status === 'Paid').reduce((sum, m) => sum + parseFloat(m.amount.replace('$', '').replace(',', '')), 0);
   const totalPending = contract.milestones.filter(m => m.status === 'Pending' || m.status === 'In Progress').reduce((sum, m) => sum + parseFloat(m.amount.replace('$', '').replace(',', '')), 0);
@@ -529,7 +432,7 @@ export default function ContractDetailPage() {
                     </div>
                     
                     <div className="space-y-4">
-                      {contract.milestones.map((milestone, index) => (
+                      {contract.milestones.map((milestone) => (
                         <div key={milestone.id} className="border border-gray-200 rounded-xl p-4">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start space-x-4 flex-1">
@@ -706,7 +609,7 @@ export default function ContractDetailPage() {
                             </button>
                             {!doc.signed && (
                               <button 
-                                onClick={() => setShowSignModal(true)}
+                                onClick={() => {/* Sign modal functionality to be implemented */}}
                                 className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
                               >
                                 <Edit2 className="h-4 w-4" />
@@ -725,7 +628,7 @@ export default function ContractDetailPage() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-dark-900">Contract Amendments</h3>
                       <button 
-                        onClick={() => setShowAmendmentModal(true)}
+                        onClick={() => {/* Amendment modal functionality to be implemented */}}
                         className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center space-x-2"
                       >
                         <Plus className="h-4 w-4" />
@@ -777,10 +680,12 @@ export default function ContractDetailPage() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="font-semibold text-lg text-dark-900 mb-4">Professional</h3>
               <div className="flex items-center space-x-3 mb-4">
-                <img
+                <Image
                   src={contract.professional.avatar}
                   alt={contract.professional.name}
-                  className="w-12 h-12 rounded-full object-cover"
+                  width={48}
+                  height={48}
+                  className="rounded-full object-cover"
                 />
                 <div className="flex-1">
                   <h4 className="font-medium text-dark-900">{contract.professional.name}</h4>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Home, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
 
 export default function Footer() {
@@ -97,16 +98,20 @@ export default function Footer() {
               <h4 className="font-semibold text-white mb-4 text-sm">Download our app</h4>
               <div className="flex space-x-4">
                 <Link href="#" className="block">
-                  <img
+                  <Image
                     src="https://cdn.worldvectorlogo.com/logos/download-on-the-app-store-apple.svg"
                     alt="Download on App Store"
+                    width={120}
+                    height={40}
                     className="h-10"
                   />
                 </Link>
                 <Link href="#" className="block">
-                  <img
+                  <Image
                     src="https://cdn.worldvectorlogo.com/logos/get-it-on-google-play.svg"
                     alt="Get it on Google Play"
+                    width={120}
+                    height={40}
                     className="h-10"
                   />
                 </Link>
@@ -115,14 +120,18 @@ export default function Footer() {
             <div>
               <h4 className="font-semibold text-white mb-4 text-sm">Recognition</h4>
               <div className="flex space-x-6 items-center">
-                <img
+                <Image
                   src="https://logos-world.net/wp-content/uploads/2020/11/G2-Logo.png"
                   alt="G2 Crowd"
+                  width={60}
+                  height={32}
                   className="h-8 opacity-70 hover:opacity-100 transition-opacity"
                 />
-                <img
+                <Image
                   src="https://cdn.worldvectorlogo.com/logos/trustpilot-1.svg"
                   alt="Trustpilot"
+                  width={80}
+                  height={32}
                   className="h-8 opacity-70 hover:opacity-100 transition-opacity"
                 />
               </div>

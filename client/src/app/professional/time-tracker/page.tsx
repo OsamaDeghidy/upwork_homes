@@ -13,47 +13,28 @@ import {
   Calendar,
   Clock,
   DollarSign,
-  Filter,
-  Search,
   Download,
-  Upload,
-  BarChart3,
   TrendingUp,
-  Users,
-  Briefcase,
   FileText,
-  CheckCircle,
-  AlertCircle,
-  Settings,
-  Eye,
-  RefreshCw,
-  Zap,
-  Target,
-  Star,
-  MapPin,
-  Phone,
-  Mail,
-  MessageCircle,
-  Save,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-  Share2,
-  PieChart,
-  Activity,
-  Award,
-  Calendar as CalendarIcon,
-  ClockIcon
+  Search,
+  X
 } from 'lucide-react';
 
 export default function TimeTrackerPage() {
-  const [activeTimer, setActiveTimer] = useState<any>(null);
+  const [activeTimer, setActiveTimer] = useState<{
+    id: number;
+    name: string;
+    client: string;
+    task: string;
+    hourlyRate: number;
+    startTime: Date;
+    notes: string;
+  } | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('week');
   const [showAddEntry, setShowAddEntry] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [editingEntry, setEditingEntry] = useState<typeof timeEntries[0] | null>(null);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 

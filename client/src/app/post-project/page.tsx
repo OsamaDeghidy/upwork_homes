@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ChevronDown, Upload, Plus, X, MapPin, DollarSign, Calendar, FileText, Image, CheckCircle, Star, Shield } from 'lucide-react';
+import { ChevronDown, Upload, MapPin, DollarSign, FileText, CheckCircle, Shield } from 'lucide-react';
 
 export default function PostProjectPage() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -150,7 +149,7 @@ export default function PostProjectPage() {
                 placeholder="Describe your project in detail. Include dimensions, materials, specific requirements, and any other important information..."
                 className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               />
-              <p className="text-sm text-gray-600 mt-2">Minimum 50 characters. The more details you provide, the better proposals you'll receive.</p>
+              <p className="text-sm text-gray-600 mt-2">Minimum 50 characters. The more details you provide, the better proposals you&apos;ll receive.</p>
             </div>
 
             <div>
@@ -435,7 +434,7 @@ export default function PostProjectPage() {
               <span className="block text-gradient-primary">Home Project</span>
             </h1>
             <p className="text-xl lg:text-2xl text-dark-600 leading-relaxed max-w-3xl mx-auto">
-              Get connected with skilled professionals for your home improvement needs. It's fast, secure, and completely free.
+              Get connected with skilled professionals for your home improvement needs. It&apos;s fast, secure, and completely free.
             </p>
           </div>
         </div>

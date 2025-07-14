@@ -2,98 +2,54 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { 
   ArrowLeft, 
-  MapPin, 
   Calendar, 
   DollarSign, 
   Star, 
   Clock, 
   CheckCircle, 
-  AlertCircle, 
   MessageCircle, 
   Phone, 
   Mail, 
-  Edit2, 
-  Trash2,
-  Plus,
   Download,
   Upload,
   FileText,
-  Image,
-  Video,
-  User,
-  Users,
-  Award,
   Shield,
-  TrendingUp,
-  Eye,
-  Heart,
-  Share2,
-  Settings,
   CreditCard,
-  Receipt,
-  Flag,
   Bell,
-  AlertTriangle,
-  Timer,
-  Banknote,
-  Wallet,
-  Send,
   X,
-  Check,
+  AlertTriangle,
   ArrowRight,
-  Calculator,
-  PieChart,
-  BarChart3,
-  TrendingDown,
-  RefreshCw,
-  ExternalLink,
-  Copy,
-  Info,
-  HelpCircle,
-  Target,
-  Activity,
-  Zap,
-  Package,
-  Truck,
-  Construction,
-  Hammer,
-  Wrench,
-  PaintBucket,
-  Lightbulb,
-  Gauge,
-  Scale,
-  Percent,
-  LineChart,
-  Database,
-  Cloud,
-  Server,
-  Monitor,
-  Smartphone,
-  Tablet,
-  Laptop,
-  Desktop,
-  Printer,
-  Camera,
-  Mic,
-  Speaker,
-  Headphones,
-  Keyboard,
-  Mouse,
-  Gamepad,
-  Joystick
+  Flag,
+  Info
 } from 'lucide-react';
+
+interface Milestone {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  dueDate: string;
+  completedDate?: string | null;
+  amount: string;
+  paid: boolean;
+  paymentDate?: string;
+  paymentMethod?: string;
+  paymentRequested?: boolean;
+  requestDate?: string;
+  progress?: number;
+}
 
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
   
   const [activeTab, setActiveTab] = useState('overview');
-  const [showMilestones, setShowMilestones] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedMilestone, setSelectedMilestone] = useState<any>(null);
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
 
@@ -304,7 +260,7 @@ export default function ProjectDetailPage() {
     return 'bg-gray-400';
   };
 
-  const handlePayment = (milestone: any) => {
+  const handlePayment = (milestone: Milestone) => {
     setSelectedMilestone(milestone);
     setPaymentAmount(milestone.amount.replace('$', ''));
     setShowPaymentModal(true);
@@ -550,7 +506,7 @@ export default function ProjectDetailPage() {
                     </div>
                     
                     <div className="space-y-4">
-                      {milestones.map((milestone, index) => (
+                      {milestones.map((milestone) => (
                         <div key={milestone.id} className="border border-gray-200 rounded-xl p-4">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start space-x-4 flex-1">
@@ -561,7 +517,7 @@ export default function ProjectDetailPage() {
                                   </div>
                                 ) : milestone.status === 'In Progress' ? (
                                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <Timer className="h-5 w-5 text-blue-600" />
+                                    <Clock className="h-5 w-5 text-blue-600" />
                                   </div>
                                 ) : (
                                   <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -816,10 +772,12 @@ export default function ProjectDetailPage() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="font-semibold text-lg text-dark-900 mb-4">Professional</h3>
               <div className="flex items-center space-x-3 mb-4">
-                <img
+                <Image
                   src={project.professional.avatar}
                   alt={project.professional.name}
-                  className="w-12 h-12 rounded-full object-cover"
+                  width={48}
+                  height={48}
+                  className="rounded-full object-cover"
                 />
                 <div className="flex-1">
                   <h4 className="font-medium text-dark-900">{project.professional.name}</h4>

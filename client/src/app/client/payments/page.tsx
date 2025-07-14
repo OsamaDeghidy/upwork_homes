@@ -6,29 +6,17 @@ import {
   CreditCard, 
   Receipt, 
   Download, 
-  Eye, 
   DollarSign, 
   Calendar, 
   Clock, 
   CheckCircle, 
   AlertCircle,
   XCircle,
-  MapPin,
   User,
-  Filter,
   Search,
   Plus,
-  FileText,
   TrendingUp,
-  Shield,
-  Star,
-  Wallet,
-  ArrowUpRight,
-  ArrowDownRight,
-  Users,
-  Settings,
-  Bell,
-  MessageCircle
+  Wallet
 } from 'lucide-react';
 
 export default function PaymentsPage() {

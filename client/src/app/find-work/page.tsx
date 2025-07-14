@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Filter, Star, Clock, Shield, CheckCircle, Heart, DollarSign, Users, Briefcase, Calendar, Map, Grid3x3, Award, TrendingUp } from 'lucide-react';
+import { Search, MapPin, Filter, Star, Clock, Shield, CheckCircle, Heart, DollarSign, Users, Calendar, Map, Grid3x3, Award, TrendingUp } from 'lucide-react';
 
 export default function FindWorkPage() {
   const [searchQuery, setSearchQuery] = useState('');

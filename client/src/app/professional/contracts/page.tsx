@@ -7,128 +7,54 @@ import {
   Calendar,
   DollarSign,
   Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   Eye,
-  Edit2,
-  Send,
   Download,
   Search,
-  Filter,
   Plus,
   User,
   MapPin,
-  Phone,
-  Mail,
-  Star,
   ArrowRight,
-  CreditCard,
-  TrendingUp,
-  Award,
-  Target,
-  Briefcase,
-  Home,
-  Settings,
-  Bell,
   MoreVertical,
-  Archive,
-  Trash2,
   Share2,
-  Copy,
-  RefreshCw,
-  PieChart,
-  BarChart3,
-  TrendingDown,
-  Zap,
-  Shield,
-  Bookmark,
-  Flag,
-  MessageSquare,
-  Video,
-  PhoneCall,
-  Calendar as CalendarIcon,
-  Timer,
-  Check,
-  X,
-  Info,
-  Upload,
-  FileIcon,
-  Image,
-  Paperclip,
-  Tag,
-  Users,
-  Building,
-  Globe,
-  Percent,
-  Receipt,
-  Wallet,
-  BanknoteIcon,
-  PlusCircle,
-  MinusCircle,
-  Calculator,
-  FileCheck,
-  ClipboardList,
-  Handshake,
-  Signature,
-  NotebookPen,
-  CircleDollarSign,
-  Activity,
-  Package,
-  Truck,
-  Wrench,
-  Hammer,
-  PaintBucket,
-  Lightbulb,
-  Plug,
-  Droplets,
-  Snowflake,
-  Flame,
-  Leaf,
-  TreePine,
-  Flower,
-  Sun,
-  Moon,
-  Cloud,
-  Umbrella,
-  Thermometer,
-  Wind,
-  Zap as ZapIcon,
-  Construction,
-  HardHat,
-  Ruler,
-  PenTool,
-  Palette,
-  Brush,
-  Scissors,
-  Drill,
-  Wrench as WrenchIcon,
-  Cog,
-  Gauge,
-  Scale,
-  Timer as TimerIcon,
-  Clock as ClockIcon,
-  Hourglass,
-  Calendar as CalendarIconAlt,
-  CalendarDays,
-  CalendarCheck,
-  CalendarX,
-  CalendarPlus,
-  CalendarMinus,
-  CalendarClock,
-  CalendarRange,
-  CalendarHeart,
-  CalendarSearch,
-  CalendarArrowDown,
-  CalendarArrowUp,
-  CalendarCheck2,
-  CalendarX2
+  X
 } from 'lucide-react';
 
+interface Contract {
+  id: number;
+  projectName: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  projectType: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  location: string;
+  description: string;
+  milestones: Array<{
+    id: number;
+    title: string;
+    amount: number;
+    status: string;
+    dueDate: string;
+  }>;
+  documents: Array<{
+    id: number;
+    name: string;
+    type: string;
+    url: string;
+  }>;
+  rating: number;
+  createdAt: string;
+}
+
 export default function ProfessionalContractsPage() {
-  const [selectedContract, setSelectedContract] = useState<any>(null);
+  const [, setSelectedContract] = useState<Contract | null>(null);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
-  const [showContractModal, setShowContractModal] = useState(false);
+  const [, setShowContractModal] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 

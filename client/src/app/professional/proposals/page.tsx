@@ -14,17 +14,12 @@ import {
   DollarSign,
   Calendar,
   MapPin,
-  User,
-  Filter,
   Search,
   Plus,
   FileText,
   MessageCircle,
   TrendingUp,
-  Target,
-  Award,
-  Star,
-  Users
+  Target
 } from 'lucide-react';
 
 export default function ProposalsPage() {

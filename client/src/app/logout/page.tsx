@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 export default function LogoutPage() {
   const router = useRouter();

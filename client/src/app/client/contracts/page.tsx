@@ -2,31 +2,25 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   FileText, 
   Download, 
   Eye, 
-  Edit2, 
   CheckCircle, 
   Clock, 
   AlertCircle,
   DollarSign,
   Calendar,
   MapPin,
-  User,
-  Filter,
   Search,
   Plus,
   Shield,
-  Award,
   Star,
   TrendingUp,
   XCircle,
-  Users,
   MessageCircle,
-  CreditCard,
-  Receipt,
-  Settings
+  CreditCard
 } from 'lucide-react';
 
 export default function ContractsPage() {
@@ -417,10 +411,12 @@ export default function ContractsPage() {
               {/* Professional Info */}
               <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center space-x-3">
-                  <img
+                  <Image
                     src={contract.professional.avatar}
                     alt={contract.professional.name}
-                    className="w-10 h-10 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover"
                   />
                   <div>
                     <div className="flex items-center space-x-2">

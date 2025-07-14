@@ -1,6 +1,7 @@
 import Hero from "@/components/sections/Hero";
 import { Search, CheckCircle, Star, Shield, ArrowRight, Sparkles, Target, Calendar, MessageSquare, BookOpen, UserPlus, Crown, Briefcase } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   // Popular Services Data
@@ -228,9 +229,11 @@ export default function Home() {
               <Link key={index} href={`/services/${service.title.toLowerCase().replace(/\s+/g, '-')}`}>
                 <div className="group bg-white rounded-2xl shadow-upwork hover:shadow-upwork-lg transition-all duration-300 overflow-hidden border border-gray-200 hover:border-primary-300">
                   <div className="relative overflow-hidden">
-                    <img
+                    <Image
                       src={service.image}
                       alt={service.title}
+                      width={400}
+                      height={192}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-semibold text-dark-800 shadow-sm">
@@ -341,9 +344,11 @@ export default function Home() {
                 <div className="p-6">
                   <div className="text-center mb-6">
                     <div className="relative inline-block">
-                      <img
+                      <Image
                         src={pro.image}
                         alt={pro.name}
+                        width={80}
+                        height={80}
                         className="w-20 h-20 rounded-full object-cover mx-auto shadow-lg"
                       />
                       {pro.verified && (
@@ -428,9 +433,11 @@ export default function Home() {
                   &quot;{testimonial.comment}&quot;
                 </blockquote>
                 <div className="flex items-center">
-                  <img
+                  <Image
                     src={testimonial.image}
                     alt={testimonial.name}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-full object-cover"
                   />
                   <div className="ml-4">
@@ -467,9 +474,11 @@ export default function Home() {
               <Link key={index} href={`/blog/${post.slug}`}>
                 <article className="group bg-white rounded-2xl shadow-upwork hover:shadow-upwork-lg transition-all duration-300 overflow-hidden border border-gray-200 hover:border-primary-300">
                   <div className="relative overflow-hidden">
-                    <img
+                    <Image
                       src={post.image}
                       alt={post.title}
+                      width={400}
+                      height={192}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-4 left-4 bg-accent-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm">

@@ -4,29 +4,18 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { 
   DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  Calendar, 
   Download, 
-  Filter, 
-  Eye, 
   CreditCard, 
   Wallet, 
-  PiggyBank,
   BarChart3,
-  LineChart,
   CheckCircle,
   Clock,
   AlertCircle,
   ArrowUpRight,
-  ArrowDownRight,
-  Receipt,
-  FileText,
-  Settings
+  ArrowDownRight
 } from 'lucide-react';
 
 export default function EarningsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState('30');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedYear, setSelectedYear] = useState('2024');
 

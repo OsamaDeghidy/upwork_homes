@@ -1,41 +1,24 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
-  BarChart3, 
-  Users, 
   Briefcase, 
   DollarSign, 
   TrendingUp, 
   Calendar, 
-  MessageCircle,
-  Star,
   CheckCircle,
   Clock,
-  AlertCircle,
-  Eye,
-  Heart,
   FileText,
-  Filter,
   Search,
-  Bell,
   ChevronRight,
   MapPin,
-  Award,
   Shield,
   Send,
-  Camera,
-  Target,
-  Zap,
-  PlusCircle,
-  Activity,
-  Bookmark,
-  Settings
+  Target
 } from 'lucide-react';
 
 export default function ProfessionalDashboard() {
-  const [selectedPeriod, setSelectedPeriod] = useState('30');
 
   // بيانات وهمية للإحصائيات
   const stats = [
@@ -277,7 +260,7 @@ export default function ProfessionalDashboard() {
                 Welcome back, Sarah! 👋
               </h1>
               <p className="text-gray-600 mt-1">
-                Here's your professional dashboard overview
+                Here&apos;s your professional dashboard overview
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -338,9 +321,11 @@ export default function ProfessionalDashboard() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <img
+                        <Image
                           src={job.clientAvatar}
                           alt={job.client}
+                          width={48}
+                          height={48}
                           className="w-12 h-12 rounded-full object-cover"
                         />
                         <div>
@@ -515,9 +500,11 @@ export default function ProfessionalDashboard() {
                       message.unread ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'
                     }`}
                   >
-                    <img
+                    <Image
                       src={message.avatar}
                       alt={message.from}
+                      width={40}
+                      height={40}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                     <div className="flex-1 min-w-0">

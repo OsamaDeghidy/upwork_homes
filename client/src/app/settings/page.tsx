@@ -7,19 +7,14 @@ import {
   User, 
   Bell, 
   Shield, 
-  CreditCard, 
   Globe, 
-  Moon, 
-  Eye,
   Smartphone,
   Mail,
   MessageCircle,
   Settings,
   Save,
-  Lock,
   Trash2,
-  Download,
-  Upload
+  Download
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -62,40 +57,6 @@ export default function SettingsPage() {
       }
     }));
   };
-
-  const settingsSections = [
-    {
-      id: 'account',
-      title: 'Account Settings',
-      icon: User,
-      items: [
-        { name: 'Profile Information', desc: 'Update your personal details', href: '/profile' },
-        { name: 'Password & Security', desc: 'Change password and security settings', href: '/settings/security' },
-        { name: 'Payment Methods', desc: 'Manage your payment information', href: '/settings/billing' }
-      ]
-    },
-    {
-      id: 'notifications',
-      title: 'Notifications',
-      icon: Bell,
-      items: []
-    },
-    {
-      id: 'privacy',
-      title: 'Privacy',
-      icon: Shield,
-      items: []
-    },
-    {
-      id: 'preferences',
-      title: 'Preferences',
-      icon: Settings,
-      items: [
-        { name: 'Data Export', desc: 'Download your account data', href: '/settings/export' },
-        { name: 'Delete Account', desc: 'Permanently delete your account', href: '/settings/delete' }
-      ]
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50">

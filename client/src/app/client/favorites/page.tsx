@@ -2,120 +2,45 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   Heart,
   Star,
   MapPin,
-  Calendar,
-  DollarSign,
-  User,
-  Phone,
-  Mail,
-  MessageCircle,
-  Eye,
+  Clock,
   Search,
-  Filter,
   Grid3X3,
   List,
   ArrowLeft,
-  Plus,
-  X,
-  Check,
   CheckCircle,
-  Clock,
-  Award,
-  Shield,
-  TrendingUp,
-  Users,
-  Briefcase,
-  Target,
-  Activity,
-  BarChart3,
-  PieChart,
-  LineChart,
-  Zap,
-  Package,
-  Truck,
-  Construction,
-  Hammer,
-  Wrench,
-  PaintBucket,
-  Lightbulb,
-  Gauge,
-  Scale,
-  Timer,
-  Flag,
-  Bookmark,
-  Tag,
-  Archive,
-  Folder,
-  FolderOpen,
-  File,
-  FileText,
-  Image,
-  Video,
-  Mic,
-  Speaker,
-  Headphones,
-  Keyboard,
-  Mouse,
-  Monitor,
-  Smartphone,
-  Tablet,
-  Laptop,
-  Printer,
-  Camera,
-  Home,
-  Building,
-  UserCheck,
-  UserX,
-  UserPlus,
-  UserMinus,
-  Crown,
-  Medal,
-  Trophy,
-  Ribbon,
-  Gift,
-  ShoppingCart,
-  ShoppingBag,
-  CreditCard,
-  Wallet,
-  Receipt,
-  Banknote,
-  Coins,
-  Calculator,
-  Percent,
-  Thermometer,
-  Battery,
-  Wifi,
-  Signal,
-  Bluetooth,
-  Usb,
-  Plug,
-  Power,
-  Flame,
-  Snowflake,
-  Droplets,
-  Wind,
-  Cloud,
-  Sun,
-  Moon,
-  Umbrella,
-  ExternalLink,
-  Copy,
-  RefreshCw,
-  Download,
-  Upload,
-  Save,
-  Edit2,
-  Trash2,
-  Settings,
-  Bell,
-  Info,
-  HelpCircle,
-  AlertCircle,
-  Share2
+  Eye
 } from 'lucide-react';
+
+interface Professional {
+  id: number;
+  name: string;
+  avatar: string;
+  company: string;
+  category: string;
+  subcategories: string[];
+  rating: number;
+  reviewCount: number;
+  completedProjects: number;
+  responseTime: string;
+  location: string;
+  distance: string;
+  hourlyRate: string;
+  projectRate: string;
+  isVerified: boolean;
+  isOnline: boolean;
+  badges: string[];
+  addedDate: string;
+  lastContacted: string;
+  projectsWithThem: number;
+  totalSpent: string;
+  description: string;
+  portfolio: string[];
+}
 
 export default function FavoritesPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -271,7 +196,7 @@ export default function FavoritesPage() {
     console.log('Removing from favorites:', professionalId);
   };
 
-  const contactProfessional = (professional: any) => {
+  const contactProfessional = (professional: Professional) => {
     // Here you would initiate contact
     console.log('Contacting professional:', professional);
   };
@@ -440,10 +365,12 @@ export default function FavoritesPage() {
                     <div className="relative h-48">
                       <div className="grid grid-cols-3 h-full">
                         {professional.portfolio.slice(0, 3).map((image, index) => (
-                          <img
+                          <Image
                             key={index}
                             src={image}
                             alt="Portfolio"
+                            width={200}
+                            height={200}
                             className="w-full h-full object-cover"
                           />
                         ))}
@@ -471,10 +398,12 @@ export default function FavoritesPage() {
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          <img
+                          <Image
                             src={professional.avatar}
                             alt={professional.name}
-                            className="w-12 h-12 rounded-full object-cover"
+                            width={48}
+                            height={48}
+                            className="rounded-full object-cover"
                           />
                           <div>
                             <h3 className="font-semibold text-dark-900">{professional.name}</h3>
@@ -540,10 +469,12 @@ export default function FavoritesPage() {
                   /* List View */
                   <div className="flex items-center space-x-6">
                     <div className="flex items-center space-x-4 flex-1">
-                      <img
+                      <Image
                         src={professional.avatar}
                         alt={professional.name}
-                        className="w-16 h-16 rounded-full object-cover"
+                        width={64}
+                        height={64}
+                        className="rounded-full object-cover"
                       />
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">

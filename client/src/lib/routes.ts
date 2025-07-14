@@ -151,7 +151,7 @@ export function getQuickActionRoutes(role: UserRole): RouteItem[] {
   }
 }
 
-export default {
+const routes = {
   publicRoutes,
   clientRoutes,
   professionalRoutes,
@@ -160,4 +160,6 @@ export default {
   getRoutesByRole,
   getMainNavRoutes,
   getQuickActionRoutes,
-}; 
+};
+
+export default routes; 

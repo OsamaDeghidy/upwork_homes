@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { 
-  Calendar,
+  Calendar as CalendarIcon,
   Clock,
   Plus,
   Edit2,
@@ -12,36 +12,31 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
-  User,
   Video,
-  Phone,
   MessageCircle,
-  Settings,
-  Filter,
-  Search,
-  Download,
-  RefreshCw,
   AlertCircle,
   CheckCircle,
-  XCircle,
-  Star,
-  DollarSign,
-  FileText,
-  Bell,
-  Calendar as CalendarIcon,
   Timer,
-  Users,
-  Briefcase
+  Users
 } from 'lucide-react';
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
-  const [showAddAppointment, setShowAddAppointment] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [, setShowAddAppointment] = useState(false);
+  const [, setSelectedAppointment] = useState<{
+    id: number;
+    title: string;
+    client: string;
+    date: string;
+    time: string;
+    type: string;
+    status: string;
+    notes?: string;
+  } | null>(null);
   const [filter, setFilter] = useState('all');
-  const [showModal, setShowModal] = useState(false);
+  const [, setShowModal] = useState(false);
 
   // Sample appointments data
   const appointments = [
@@ -401,7 +396,7 @@ export default function CalendarPage() {
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-6">
               <h3 className="font-heading font-semibold text-lg text-dark-900 mb-4">
-                Today's Appointments
+                Today&apos;s Appointments
               </h3>
               {todayAppointments.length > 0 ? (
                 <div className="space-y-3">
@@ -428,10 +423,10 @@ export default function CalendarPage() {
                               {appointment.time}
                             </p>
                             <div className="flex items-center space-x-2 mt-2">
-                              <span className={`text-xs px-2 py-1 rounded-full ${statusColors[appointment.status]}`}>
+                              <span className={`text-xs px-2 py-1 rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
                                 {appointment.status}
                               </span>
-                              <span className={`text-xs px-2 py-1 rounded-full ${priorityColors[appointment.priority]}`}>
+                              <span className={`text-xs px-2 py-1 rounded-full ${priorityColors[appointment.priority as keyof typeof priorityColors]}`}>
                                 {appointment.priority}
                               </span>
                             </div>
@@ -545,13 +540,13 @@ export default function CalendarPage() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 mt-3">
-                          <span className={`text-xs px-3 py-1 rounded-full ${statusColors[appointment.status]}`}>
+                          <span className={`text-xs px-3 py-1 rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
                             {appointment.status}
                           </span>
-                          <span className={`text-xs px-3 py-1 rounded-full ${typeColors[appointment.type]}`}>
+                          <span className={`text-xs px-3 py-1 rounded-full ${typeColors[appointment.type as keyof typeof typeColors]}`}>
                             {appointment.type.replace('_', ' ')}
                           </span>
-                          <span className={`text-xs px-3 py-1 rounded-full ${priorityColors[appointment.priority]}`}>
+                          <span className={`text-xs px-3 py-1 rounded-full ${priorityColors[appointment.priority as keyof typeof priorityColors]}`}>
                             {appointment.priority} priority
                           </span>
                         </div>
