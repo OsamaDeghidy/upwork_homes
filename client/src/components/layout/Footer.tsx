@@ -99,7 +99,7 @@ export default function Footer() {
               <div className="flex space-x-4">
                 <Link href="#" className="block">
                   <Image
-                    src="https://cdn.worldvectorlogo.com/logos/download-on-the-app-store-apple.svg"
+                    src="/app-store-badge.svg"
                     alt="Download on App Store"
                     width={120}
                     height={40}
@@ -108,7 +108,7 @@ export default function Footer() {
                 </Link>
                 <Link href="#" className="block">
                   <Image
-                    src="https://cdn.worldvectorlogo.com/logos/get-it-on-google-play.svg"
+                    src="/google-play-badge.svg"
                     alt="Get it on Google Play"
                     width={120}
                     height={40}
@@ -128,7 +128,7 @@ export default function Footer() {
                   className="h-8 opacity-70 hover:opacity-100 transition-opacity"
                 />
                 <Image
-                  src="https://cdn.worldvectorlogo.com/logos/trustpilot-1.svg"
+                  src="/trustpilot-logo.svg"
                   alt="Trustpilot"
                   width={80}
                   height={32}
@@ -174,4 +174,4 @@ export default function Footer() {
       </div>
     </footer>
   );
-} 
+}

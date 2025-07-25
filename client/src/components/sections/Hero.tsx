@@ -38,7 +38,7 @@ export default function Hero() {
   const trustedCompanies = [
     { name: 'Home Depot', logo: 'https://logos-world.net/wp-content/uploads/2020/05/Home-Depot-Logo.png' },
     { name: 'Lowes', logo: 'https://logos-world.net/wp-content/uploads/2020/04/Lowes-Logo.png' },
-    { name: 'Angie List', logo: 'https://cdn.worldvectorlogo.com/logos/angies-list-1.svg' },
+    { name: 'Angie List', logo: '/angies-list-logo.svg' },
   ];
 
   return (
@@ -170,4 +170,4 @@ export default function Hero() {
       </div>
     </section>
   );
-} 
+}

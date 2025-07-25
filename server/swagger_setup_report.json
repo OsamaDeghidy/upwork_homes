@@ -1,0 +1,51 @@
+{
+  "test_date": "2025-07-16T15:48:26.607666",
+  "swagger_status": "configured",
+  "base_url": "http://localhost:8000",
+  "endpoints": {
+    "swagger_ui": "/api/docs/",
+    "redoc": "/api/redoc/",
+    "schema": "/api/schema/",
+    "api_root": "/api/"
+  },
+  "test_users": [
+    {
+      "username": "swagger_admin",
+      "password": "admin123",
+      "type": "admin"
+    },
+    {
+      "username": "swagger_client",
+      "password": "client123",
+      "type": "client"
+    },
+    {
+      "username": "swagger_pro",
+      "password": "pro123",
+      "type": "home_pro"
+    }
+  ],
+  "api_categories": [
+    "Authentication",
+    "Projects",
+    "Contracts",
+    "Payments",
+    "Messaging",
+    "Reviews",
+    "Portfolio",
+    "Subscriptions",
+    "Tasks",
+    "Calendar",
+    "Time Tracking",
+    "File Management",
+    "Notifications",
+    "Location Services"
+  ],
+  "next_steps": [
+    "تشغيل الخادم: python manage.py runserver",
+    "زيارة Swagger UI: http://localhost:8000/api/docs/",
+    "تسجيل الدخول باستخدام المستخدمين التجريبيين",
+    "اختبار APIs مختلفة",
+    "استخدام مجموعة Postman للاختبار المتقدم"
+  ]
+}

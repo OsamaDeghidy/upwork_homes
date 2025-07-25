@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Swagger Test</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>🔧 Swagger Diagnosis</h1>
+    
+    <h2>Links to Test:</h2>
+    <ul>
+        <li><a href="http://localhost:8000/api/docs/" target="_blank">Swagger UI</a></li>
+        <li><a href="http://localhost:8000/api/redoc/" target="_blank">ReDoc</a></li>
+        <li><a href="http://localhost:8000/api/schema/" target="_blank">OpenAPI Schema</a></li>
+        <li><a href="http://localhost:8000/api/" target="_blank">API Root</a></li>
+        <li><a href="http://localhost:8000/admin/" target="_blank">Django Admin</a></li>
+    </ul>
+    
+    <h2>Common Issues:</h2>
+    <ol>
+        <li>Server not running: <code>python manage.py runserver</code></li>
+        <li>Static files not collected: <code>python manage.py collectstatic</code></li>
+        <li>drf-spectacular not installed: <code>pip install drf-spectacular</code></li>
+        <li>Browser cache: Clear cache and refresh</li>
+    </ol>
+    
+    <h2>Debug Steps:</h2>
+    <ol>
+        <li>Check server console for errors</li>
+        <li>Open browser developer tools (F12)</li>
+        <li>Check Network tab for failed requests</li>
+        <li>Check Console tab for JavaScript errors</li>
+    </ol>
+    
+    <script>
+        console.log('Swagger Test Page Loaded');
+        
+        // Test API connectivity
+        fetch('/api/')
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ API is accessible');
+                } else {
+                    console.log('❌ API returned:', response.status);
+                }
+            })
+            .catch(error => {
+                console.log('❌ API connection failed:', error);
+            });
+    </script>
+</body>
+</html>

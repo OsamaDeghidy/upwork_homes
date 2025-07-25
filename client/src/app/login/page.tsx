@@ -1,19 +1,58 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 import { Eye, EyeOff, Mail, Lock, Shield, Users, Star } from 'lucide-react';
+import { authService } from '@/lib/auth';
+import { useAuthStore } from '@/lib/store';
+import { LoginCredentials } from '@/lib/types';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { setUser, setTokens } = useAuthStore();
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginCredentials & { rememberMe: boolean }>();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log('Login attempt:', { email, password, rememberMe });
+  const onSubmit = async (data: LoginCredentials & { rememberMe: boolean }) => {
+    setIsLoading(true);
+    
+    try {
+      const response = await authService.login({
+        email: data.email,
+        password: data.password,
+      });
+      
+      // Save user data and tokens
+      setUser(response.user);
+      setTokens(response.tokens);
+      
+      toast.success('Login successful!');
+      
+      // Redirect to profile page after successful login
+      router.push('/profile');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error.response?.data?.errors) {
+        const errorMessages = Object.values(error.response.data.errors).flat();
+        toast.error(errorMessages[0] as string);
+      } else {
+        toast.error('Login failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -25,7 +64,7 @@ export default function LoginPage() {
           <div className="text-center">
             <Link href="/" className="inline-flex items-center space-x-2 mb-8">
               <div className="bg-gradient-to-r from-primary-500 to-accent-500 p-2 rounded-xl">
-                <img src="/logo.png" alt="A-List Home Pros" className="h-8 w-auto" />
+                <img src="/logo.svg" alt="A-List Home Pros" className="h-8 w-auto" />
               </div>
               <div className="font-heading font-bold text-xl">
                 <span className="text-gradient-primary">A-List</span>
@@ -42,7 +81,7 @@ export default function LoginPage() {
           </div>
 
           {/* Login Form */}
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-4">
               {/* Email Field */}
               <div>
@@ -52,16 +91,24 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     id="email"
-                    name="email"
                     type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    {...register('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: 'Invalid email address'
+                      }
+                    })}
+                    className={`w-full bg-white border rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="Enter your email"
                   />
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                )}
               </div>
 
               {/* Password Field */}
@@ -72,12 +119,17 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     id="password"
-                    name="password"
                     type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    {...register('password', {
+                      required: 'Password is required',
+                      minLength: {
+                        value: 6,
+                        message: 'Password must be at least 6 characters'
+                      }
+                    })}
+                    className={`w-full bg-white border rounded-xl px-4 py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.password ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="Enter your password"
                   />
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -89,6 +141,9 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                )}
               </div>
             </div>
 
@@ -97,8 +152,7 @@ export default function LoginPage() {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  {...register('rememberMe')}
                   className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500"
                 />
                 <span className="ml-2 text-sm text-dark-700">Remember me</span>
@@ -111,9 +165,10 @@ export default function LoginPage() {
             {/* Login Button */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
 
             {/* Divider */}
@@ -153,7 +208,7 @@ export default function LoginPage() {
 
             {/* Sign Up Link */}
             <div className="text-center">
-              <span className="text-dark-600">Don&apos;t have an account? </span>
+              <span className="text-dark-600">Don't have an account? </span>
               <Link href="/register" className="text-primary-600 hover:text-primary-700 font-semibold">
                 Sign up now
               </Link>
@@ -230,4 +285,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-} 
+}

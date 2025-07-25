@@ -1,0 +1,195 @@
+{
+  "info": {
+    "name": "A-List Home Professionals API",
+    "description": "Complete API collection for A-List platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"swagger@admin.com\", \"password\": \"admin123\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/user/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "user",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/users/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "users",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/projects/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"\\u0645\\u0634\\u0631\\u0648\\u0639 \\u0627\\u062e\\u062a\\u0628\\u0627\\u0631 Swagger\", \"description\": \"\\u0648\\u0635\\u0641 \\u0627\\u0644\\u0645\\u0634\\u0631\\u0648\\u0639 \\u0627\\u0644\\u062a\\u062c\\u0631\\u064a\\u0628\\u064a\", \"budget_min\": 1000, \"budget_max\": 5000, \"currency\": \"SAR\", \"location\": \"\\u0627\\u0644\\u0631\\u064a\\u0627\\u0636\", \"duration_days\": 30, \"project_type\": \"fixed\", \"urgency\": \"medium\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "List Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/plans/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "subscriptions",
+                "plans",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/subscriptions/my-subscription/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "subscriptions",
+                "my-subscription",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -13,8 +13,12 @@ import {
   Star, 
   MessageCircle, 
   Plus,
-  Briefcase
+  Briefcase,
+  Eye,
+  Heart
 } from 'lucide-react';
+import { projectsService } from '@/lib/projects';
+import { Project, Category } from '@/lib/types';
 
 export default function ClientProjectsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,149 +26,54 @@ export default function ClientProjectsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [viewMode, setViewMode] = useState('grid');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const projects = [
-    {
-      id: 1,
-      title: 'Kitchen Renovation',
-      description: 'Complete kitchen remodel with new cabinets, countertops, and appliances',
-      professional: {
-        name: 'Sarah Mitchell',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b647?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-        rating: 4.9,
-        reviews: 127
-      },
-      status: 'In Progress',
-      progress: 75,
-      budget: '$8,500',
-      spent: '$6,375',
-      deadline: '2024-02-15',
-      startDate: '2024-01-01',
-      location: 'Los Angeles, CA',
-      category: 'Kitchen Remodeling',
-      priority: 'High',
-      lastUpdate: '2 hours ago',
-      messages: 12,
-      images: [
-        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-        'https://images.unsplash.com/photo-1556909045-f18c06d3e1d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
-      ]
-    },
-    {
-      id: 2,
-      title: 'Bathroom Plumbing Fix',
-      description: 'Fix leaking pipes and replace old fixtures',
-      professional: {
-        name: 'David Rodriguez',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-        rating: 5.0,
-        reviews: 89
-      },
-      status: 'Waiting for Materials',
-      progress: 30,
-      budget: '$1,200',
-      spent: '$360',
-      deadline: '2024-01-28',
-      startDate: '2024-01-15',
-      location: 'Los Angeles, CA',
-      category: 'Plumbing',
-      priority: 'Medium',
-      lastUpdate: '1 day ago',
-      messages: 8,
-      images: [
-        'https://images.unsplash.com/photo-1620626011761-996317b8d101?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
-      ]
-    },
-    {
-      id: 3,
-      title: 'Garden Landscaping',
-      description: 'Complete backyard makeover with new plants and hardscaping',
-      professional: {
-        name: 'Maria Santos',
-        avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-        rating: 4.8,
-        reviews: 156
-      },
-      status: 'Planning Phase',
-      progress: 15,
-      budget: '$3,200',
-      spent: '$480',
-      deadline: '2024-03-01',
-      startDate: '2024-01-20',
-      location: 'Los Angeles, CA',
-      category: 'Landscaping',
-      priority: 'Low',
-      lastUpdate: '3 days ago',
-      messages: 5,
-      images: [
-        'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
-      ]
-    },
-    {
-      id: 4,
-      title: 'Electrical Panel Upgrade',
-      description: 'Upgrade main electrical panel and add new circuits',
-      professional: {
-        name: 'Michael Johnson',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-        rating: 4.7,
-        reviews: 74
-      },
-      status: 'Completed',
-      progress: 100,
-      budget: '$2,800',
-      spent: '$2,800',
-      deadline: '2024-01-10',
-      startDate: '2023-12-20',
-      location: 'Los Angeles, CA',
-      category: 'Electrical Work',
-      priority: 'High',
-      lastUpdate: '1 week ago',
-      messages: 15,
-      images: []
-    },
-    {
-      id: 5,
-      title: 'Roof Repair',
-      description: 'Fix damaged shingles and check for leaks',
-      professional: {
-        name: 'James Wilson',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-        rating: 4.9,
-        reviews: 102
-      },
-      status: 'Cancelled',
-      progress: 0,
-      budget: '$1,500',
-      spent: '$0',
-      deadline: '2024-01-05',
-      startDate: '2023-12-15',
-      location: 'Los Angeles, CA',
-      category: 'Roofing',
-      priority: 'Medium',
-      lastUpdate: '2 weeks ago',
-      messages: 3,
-      images: []
-    }
-  ];
+  // Fetch projects and categories
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [projectsResponse, categoriesResponse] = await Promise.all([
+           projectsService.getMyProjects({
+             status: selectedStatus !== 'all' ? selectedStatus : undefined,
+             category: selectedCategory !== 'all' ? selectedCategory : undefined,
+             search: searchQuery || undefined
+           }),
+           projectsService.getCategories()
+         ]);
+        
+        setProjects(projectsResponse.results);
+        setCategories(categoriesResponse);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Error loading data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+   }, [selectedStatus, selectedCategory, searchQuery]);
 
   const statusOptions = [
-    { value: 'all', label: 'All Status' },
-    { value: 'active', label: 'Active' },
-    { value: 'in-progress', label: 'In Progress' },
+    { value: 'all', label: 'All Projects' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'published', label: 'Published' },
+    { value: 'in_progress', label: 'In Progress' },
     { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' },
-    { value: 'planning', label: 'Planning' }
+    { value: 'cancelled', label: 'Cancelled' }
   ];
 
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },
-    { value: 'kitchen', label: 'Kitchen Remodeling' },
-    { value: 'bathroom', label: 'Bathroom Renovation' },
-    { value: 'electrical', label: 'Electrical Work' },
-    { value: 'plumbing', label: 'Plumbing' },
-    { value: 'landscaping', label: 'Landscaping' },
-    { value: 'roofing', label: 'Roofing' }
+    ...categories.map(cat => ({
+      value: cat.slug,
+      label: cat.name
+    }))
   ];
 
   const sortOptions = [
@@ -177,31 +86,82 @@ export default function ClientProjectsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'Waiting for Materials':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Planning Phase':
-        return 'bg-purple-100 text-purple-800';
-      case 'Completed':
-        return 'bg-green-100 text-green-800';
-      case 'Cancelled':
-        return 'bg-red-100 text-red-800';
+      case 'completed':
+        return 'text-green-600 bg-green-50';
+      case 'in_progress':
+        return 'text-blue-600 bg-blue-50';
+      case 'published':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'draft':
+        return 'text-gray-600 bg-gray-50';
+      case 'cancelled':
+        return 'text-red-600 bg-red-50';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'text-gray-600 bg-gray-50';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'High':
-        return 'bg-red-100 text-red-800';
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Low':
-        return 'bg-green-100 text-green-800';
+  const getProgressBarColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-500';
+      case 'in_progress':
+        return 'bg-blue-500';
+      case 'published':
+        return 'bg-yellow-500';
+      case 'draft':
+        return 'bg-gray-500';
+      case 'cancelled':
+        return 'bg-red-500';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-500';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'draft': return 'Draft';
+      case 'published': return 'Published';
+      case 'in_progress': return 'In Progress';
+      case 'completed': return 'Completed';
+      case 'cancelled': return 'Cancelled';
+      default: return status;
+    }
+  };
+
+  const formatBudget = (project: Project) => {
+    if (project.budget_type === 'fixed' && project.budget_min) {
+      return `$${project.budget_min.toLocaleString()}`;
+    } else if (project.budget_min && project.budget_max) {
+      return `$${project.budget_min.toLocaleString()} - $${project.budget_max.toLocaleString()}`;
+    } else if (project.budget_min) {
+      return `From $${project.budget_min.toLocaleString()}`;
+    } else if (project.budget_max) {
+      return `Up to $${project.budget_max.toLocaleString()}`;
+    }
+    return 'Not specified';
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getPriorityColor = (urgency: string) => {
+    switch (urgency) {
+      case 'urgent':
+        return 'bg-red-100 text-red-800 border border-red-200';
+      case 'high':
+        return 'bg-orange-100 text-orange-800 border border-orange-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+      case 'low':
+        return 'bg-green-100 text-green-800 border border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
@@ -212,23 +172,48 @@ export default function ClientProjectsPage() {
     return 'bg-red-500';
   };
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         project.professional.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = selectedStatus === 'all' || 
-                         (selectedStatus === 'active' && ['In Progress', 'Waiting for Materials', 'Planning Phase'].includes(project.status)) ||
-                         (selectedStatus === 'in-progress' && project.status === 'In Progress') ||
-                         (selectedStatus === 'completed' && project.status === 'Completed') ||
-                         (selectedStatus === 'cancelled' && project.status === 'Cancelled') ||
-                         (selectedStatus === 'planning' && project.status === 'Planning Phase');
-    
-    const matchesCategory = selectedCategory === 'all' || 
-                           project.category.toLowerCase().includes(selectedCategory.toLowerCase());
-    
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+  // Enhanced filtering and sorting logic
+  const filteredAndSortedProjects = React.useMemo(() => {
+    let filtered = projects.filter(project => {
+      const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (project.assigned_professional && 
+                            `${project.assigned_professional.first_name} ${project.assigned_professional.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesStatus = selectedStatus === 'all' || project.status === selectedStatus;
+       
+      const matchesCategory = selectedCategory === 'all' || project.category?.slug === selectedCategory;
+      
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'created_at':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'updated_at':
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        case 'budget':
+          const budgetA = a.budget_min || 0;
+          const budgetB = b.budget_min || 0;
+          return budgetB - budgetA;
+        case 'deadline':
+          if (!a.end_date && !b.end_date) return 0;
+          if (!a.end_date) return 1;
+          if (!b.end_date) return -1;
+          return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
+        case 'status':
+          return a.status.localeCompare(b.status);
+        default:
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+    });
+
+    return filtered;
+  }, [projects, searchQuery, selectedStatus, selectedCategory, sortBy]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -241,7 +226,7 @@ export default function ClientProjectsPage() {
                 My Projects
               </h1>
               <p className="text-gray-600 mt-1">
-                Manage and track all your home improvement projects
+                Manage and track your projects
               </p>
             </div>
             <Link
@@ -249,7 +234,7 @@ export default function ClientProjectsPage() {
               className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-2"
             >
               <Plus className="h-5 w-5" />
-              <span>Post New Project</span>
+              <span>New Project</span>
             </Link>
           </div>
         </div>
@@ -319,8 +304,20 @@ export default function ClientProjectsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">
-                {filteredProjects.length} projects found
+                {filteredAndSortedProjects.length} projects found
               </span>
+              {(searchQuery || selectedStatus !== 'all' || selectedCategory !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedStatus('all');
+                    setSelectedCategory('all');
+                  }}
+                  className="text-xs text-primary-600 hover:text-primary-700 underline"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <button
@@ -348,114 +345,246 @@ export default function ClientProjectsPage() {
         </div>
 
         {/* Projects Grid/List */}
-        {viewMode === 'grid' ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading projects...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <div className="text-red-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">An Error Occurred</h3>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => (
+            {filteredAndSortedProjects.map((project) => (
               <div
                 key={project.id}
-                className="bg-white rounded-2xl shadow-upwork border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                className="bg-white rounded-2xl shadow-upwork border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group"
               >
-                {/* Project Image */}
-                {project.images.length > 0 && (
-                  <div className="relative h-48 bg-gray-200">
-                    <Image
-                      src={project.images[0]}
-                      alt={project.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute top-4 right-4 flex space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                        {project.status}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
-                        {project.priority}
-                      </span>
+                {/* Project Header with Status and Priority */}
+                <div className="relative">
+                  {project.images && project.images.length > 0 ? (
+                    <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
+                      <Image
+                        src={project.images[0].file}
+                        alt={project.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-10 transition-all duration-300"></div>
                     </div>
+                  ) : (
+                    <div className="h-32 bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center">
+                      <Briefcase className="h-12 w-12 text-primary-300" />
+                    </div>
+                  )}
+                  
+                  {/* Status and Priority Badges */}
+                  <div className="absolute top-4 right-4 flex flex-col space-y-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-lg ${getStatusColor(project.status)}`}>
+                      {getStatusLabel(project.status)}
+                    </span>
+                    {project.urgency && (
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-lg ${getPriorityColor(project.urgency)}`}>
+                        {project.urgency.charAt(0).toUpperCase() + project.urgency.slice(1)}
+                      </span>
+                    )}
                   </div>
-                )}
+                  
+                  {/* Project ID Badge */}
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-mono text-gray-600 shadow-sm">
+                      #{project.id}
+                    </span>
+                  </div>
+                </div>
 
                 <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-heading font-semibold text-lg text-dark-900 line-clamp-2">
-                      {project.title}
-                    </h3>
+                  {/* Project Title and Category */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-heading font-bold text-xl text-dark-900 line-clamp-2 group-hover:text-primary-600 transition-colors duration-200">
+                        {project.title}
+                      </h3>
+                    </div>
+                    
+                    {/* Category and Timeline */}
+                    <div className="flex items-center space-x-3 mb-3">
+                      {project.category && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          {project.category.name}
+                        </span>
+                      )}
+                      {project.timeline && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {project.timeline}
+                        </span>
+                      )}
+                      {project.is_remote_allowed && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Remote OK
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
                     {project.description}
                   </p>
 
                   {/* Professional Info */}
-                  <div className="flex items-center space-x-3 mb-4">
-                    <Image
-                      src={project.professional.avatar}
-                      alt={project.professional.name}
-                      width={32}
-                      height={32}
-                      className="rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-medium text-dark-900 text-sm">
-                        {project.professional.name}
-                      </p>
-                      <div className="flex items-center space-x-1">
-                        <Star className="h-3 w-3 text-yellow-400" />
-                        <span className="text-xs text-gray-600">
-                          {project.professional.rating} ({project.professional.reviews} reviews)
-                        </span>
+                  {project.assigned_professional ? (
+                    <div className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="relative">
+                          <Image
+                            src={project.assigned_professional.avatar || '/default-avatar.png'}
+                            alt={project.assigned_professional.first_name + ' ' + project.assigned_professional.last_name}
+                            width={40}
+                            height={40}
+                            className="rounded-full object-cover border-2 border-white shadow-sm"
+                          />
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-dark-900 text-sm">
+                            {project.assigned_professional.first_name} {project.assigned_professional.last_name}
+                          </p>
+                          <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1">
+                              <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                              <span className="text-xs text-gray-600 font-medium">
+                                {project.assigned_professional.rating_average || 0}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-400">•</span>
+                            <span className="text-xs text-gray-600">
+                              {project.assigned_professional.rating_count || 0} reviews
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Assigned Pro</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        <p className="text-sm text-yellow-800 font-medium">Awaiting Professional Assignment</p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Progress Bar */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-600">Progress</span>
-                      <span className="text-sm font-medium text-dark-900">{project.progress}%</span>
+                  {project.status === 'in_progress' && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-blue-900">Project Progress</span>
+                        <span className="text-sm font-bold text-blue-900">{project.completion_percentage || 0}%</span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-3 shadow-inner">
+                        <div 
+                          className={`h-3 rounded-full transition-all duration-500 ${getProgressColor(project.completion_percentage || 0)} shadow-sm`}
+                          style={{ width: `${project.completion_percentage || 0}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-blue-700 mt-1">
+                        <span>Started</span>
+                        <span>In Progress</span>
+                        <span>Complete</span>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${getProgressColor(project.progress)}`}
-                        style={{ width: `${project.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Project Details */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{project.budget}</span>
+                  <div className="space-y-3 mb-4">
+                    {/* Budget and Location */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center space-x-2 bg-green-50 rounded-lg p-2">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <span className="text-sm font-semibold text-green-900">{formatBudget(project)}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 bg-purple-50 rounded-lg p-2">
+                        <MapPin className="h-4 w-4 text-purple-600" />
+                        <span className="text-sm text-purple-900 truncate">{project.location}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{project.deadline}</span>
+                    
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {project.end_date && (
+                        <div className="flex items-center space-x-2 bg-orange-50 rounded-lg p-2">
+                          <Calendar className="h-4 w-4 text-orange-600" />
+                          <div>
+                            <p className="text-xs text-orange-700">Deadline</p>
+                            <p className="text-sm font-medium text-orange-900">{formatDate(project.end_date)}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2">
+                        <Calendar className="h-4 w-4 text-gray-600" />
+                        <div>
+                          <p className="text-xs text-gray-700">Created</p>
+                          <p className="text-sm font-medium text-gray-900">{formatDate(project.created_at)}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{project.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <MessageCircle className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{project.messages} messages</span>
+                    
+                    {/* Engagement Stats */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="flex items-center space-x-1 bg-blue-50 rounded-lg p-2">
+                        <Eye className="h-3 w-3 text-blue-600" />
+                        <span className="text-xs font-medium text-blue-900">{project.views_count || 0}</span>
+                      </div>
+                      <div className="flex items-center space-x-1 bg-red-50 rounded-lg p-2">
+                        <Heart className="h-3 w-3 text-red-600" />
+                        <span className="text-xs font-medium text-red-900">{project.favorites_count || 0}</span>
+                      </div>
+                      <div className="flex items-center space-x-1 bg-indigo-50 rounded-lg p-2">
+                        <MessageCircle className="h-3 w-3 text-indigo-600" />
+                        <span className="text-xs font-medium text-indigo-900">{project.proposals_count || 0}</span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center space-x-2">
                     <Link
-                      href={`/client/projects/${project.id}`}
-                      className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors duration-200 text-center"
+                      href={`/projects/${project.slug}`}
+                      className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 text-center shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2"
                     >
-                      View Details
+                      <Eye className="h-4 w-4" />
+                      <span>View Details</span>
                     </Link>
                     <Link
-                      href={`/messages?project=${project.id}`}
-                      className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
+                      href={`/client/messages?project=${project.id}`}
+                      className="p-2.5 border-2 border-gray-300 rounded-xl text-gray-600 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                      title="Send Message"
                     >
                       <MessageCircle className="h-4 w-4" />
                     </Link>
+                    {project.status === 'published' && (
+                      <button
+                        className="p-2.5 border-2 border-gray-300 rounded-xl text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                        title="Add to Favorites"
+                      >
+                        <Heart className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -464,85 +593,171 @@ export default function ClientProjectsPage() {
         ) : (
           <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 overflow-hidden">
             <div className="divide-y divide-gray-200">
-              {filteredProjects.map((project) => (
+              {filteredAndSortedProjects.map((project) => (
                 <div
                   key={project.id}
-                  className="p-6 hover:bg-gray-50 transition-colors duration-200"
+                  className="p-6 hover:bg-gradient-to-r hover:from-gray-50 hover:to-primary-50 transition-all duration-300 border-l-4 border-transparent hover:border-primary-500 group"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-heading font-semibold text-lg text-dark-900">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-mono text-gray-600 shadow-sm">
+                          #{project.id}
+                        </span>
+                        <h3 className="font-heading font-bold text-xl text-dark-900 line-clamp-2 group-hover:text-primary-600 transition-colors duration-200">
                           {project.title}
                         </h3>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                          {project.status}
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${getStatusColor(project.status)}`}>
+                          {getStatusLabel(project.status)}
                         </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
-                          {project.priority}
-                        </span>
+                        {project.urgency && (
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${getPriorityColor(project.urgency)}`}>
+                            {project.urgency.charAt(0).toUpperCase() + project.urgency.slice(1)}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Category and Tags */}
+                      <div className="flex items-center space-x-2 mb-3">
+                        {project.category && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {project.category.name}
+                          </span>
+                        )}
+                        {project.timeline && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {project.timeline}
+                          </span>
+                        )}
+                        {project.is_remote_allowed && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Remote OK
+                          </span>
+                        )}
                       </div>
 
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
                         {project.description}
                       </p>
 
-                      <div className="flex items-center space-x-6 mb-3">
-                        <div className="flex items-center space-x-2">
-                          <Image
-                            src={project.professional.avatar}
-                            alt={project.professional.name}
-                            width={24}
-                            height={24}
-                            className="rounded-full object-cover"
-                          />
-                          <span className="text-sm text-gray-600">{project.professional.name}</span>
+                      {/* Professional Info */}
+                      {project.assigned_professional ? (
+                        <div className="bg-gray-50 rounded-xl p-3 mb-4 border border-gray-100">
+                          <div className="flex items-center space-x-3">
+                            <div className="relative">
+                              <Image
+                                src={project.assigned_professional.avatar || '/default-avatar.png'}
+                                alt={project.assigned_professional.first_name + ' ' + project.assigned_professional.last_name}
+                                width={32}
+                                height={32}
+                                className="rounded-full object-cover border-2 border-white shadow-sm"
+                              />
+                              <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-green-400 border-2 border-white rounded-full"></div>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-dark-900 text-sm">
+                                {project.assigned_professional.first_name} {project.assigned_professional.last_name}
+                              </p>
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-1">
+                                  <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                  <span className="text-xs text-gray-600 font-medium">
+                                    {project.assigned_professional.rating_average || 0}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-gray-400">•</span>
+                                <span className="text-xs text-gray-600">
+                                  {project.assigned_professional.rating_count || 0} reviews
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-500">Assigned Pro</span>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <DollarSign className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{project.budget}</span>
+                      ) : (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                            <p className="text-sm text-yellow-800 font-medium">Awaiting Professional Assignment</p>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{project.deadline}</span>
+                      )}
+
+                      {/* Project Details Grid */}
+                      <div className="grid grid-cols-4 gap-3 mb-4">
+                        <div className="flex items-center space-x-2 bg-green-50 rounded-lg p-2">
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-semibold text-green-900 truncate">{formatBudget(project)}</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{project.location}</span>
+                        <div className="flex items-center space-x-2 bg-purple-50 rounded-lg p-2">
+                          <MapPin className="h-4 w-4 text-purple-600" />
+                          <span className="text-sm text-purple-900 truncate">{project.location}</span>
+                        </div>
+                        {project.end_date && (
+                          <div className="flex items-center space-x-2 bg-orange-50 rounded-lg p-2">
+                            <Calendar className="h-4 w-4 text-orange-600" />
+                            <span className="text-sm text-orange-900 truncate">{formatDate(project.end_date)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-center space-x-2 bg-blue-50 rounded-lg p-2">
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-3 w-3 text-blue-600" />
+                            <span className="text-xs font-medium text-blue-900">{project.views_count || 0}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Heart className="h-3 w-3 text-red-600" />
+                            <span className="text-xs font-medium text-red-900">{project.favorites_count || 0}</span>
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-4">
-                        <div className="flex-1 max-w-xs">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-gray-600">Progress</span>
-                            <span className="text-xs font-medium text-dark-900">{project.progress}%</span>
+                        {project.status === 'in_progress' && (
+                          <div className="flex-1 max-w-xs bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-gray-800">Progress</span>
+                              <span className="text-xs font-bold text-gray-900 bg-white px-2 py-1 rounded-lg shadow-sm">{project.completion_percentage || 0}%</span>
+                            </div>
+                            <div className="relative">
+                              <div className="w-full bg-gray-300 rounded-full h-3 shadow-inner">
+                                <div 
+                                  className={`h-3 rounded-full transition-all duration-300 ${getProgressColor(project.completion_percentage || 0)} shadow-sm`}
+                                  style={{ width: `${project.completion_percentage || 0}%` }}
+                                ></div>
+                              </div>
+                              <div className="flex justify-between text-xs text-gray-600 mt-1">
+                                <span className="font-medium">Started</span>
+                                <span className="font-medium">Complete</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className={`h-2 rounded-full ${getProgressColor(project.progress)}`}
-                              style={{ width: `${project.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        )}
                         <span className="text-xs text-gray-500">
-                          Updated {project.lastUpdate}
+                          Last updated {formatDate(project.updated_at)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 ml-6">
+                    <div className="flex items-center space-x-3 ml-6">
                       <Link
-                        href={`/client/projects/${project.id}`}
-                        className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors duration-200"
+                        href={`/projects/${project.slug}`}
+                        className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                       >
-                        View Details
+                        <Eye className="h-4 w-4" />
+                        <span>View Details</span>
                       </Link>
+                      {project.status === 'published' && (
+                        <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-semibold rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                          <Heart className="h-4 w-4" />
+                          <span>Favorite</span>
+                        </button>
+                      )}
                       <Link
-                        href={`/messages?project=${project.id}`}
-                        className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
+                        href={`/client/messages?project=${project.id}`}
+                        className="flex items-center space-x-2 px-4 py-2 border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md"
                       >
                         <MessageCircle className="h-4 w-4" />
+                        <span>Messages</span>
                       </Link>
                     </div>
                   </div>
@@ -553,24 +768,24 @@ export default function ClientProjectsPage() {
         )}
 
         {/* No Projects Found */}
-        {filteredProjects.length === 0 && (
+        {!loading && !error && filteredAndSortedProjects.length === 0 && (
           <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-12 text-center">
             <Briefcase className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="font-heading font-semibold text-xl text-dark-900 mb-2">
-              No projects found
+              No Projects Found
             </h3>
             <p className="text-gray-600 mb-6">
-              Try adjusting your filters or search query to find projects.
+              You haven't created any projects yet or no projects match the selected filters.
             </p>
             <Link
               href="/post-project"
               className="bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors duration-200"
             >
-              Post Your First Project
+              Create Your First Project
             </Link>
           </div>
         )}
       </div>
     </div>
   );
-} 
+}

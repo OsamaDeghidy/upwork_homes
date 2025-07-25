@@ -1,67 +1,127 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 import { Eye, EyeOff, Mail, Lock, User, CheckCircle, Shield, Users, Star, Phone, MapPin } from 'lucide-react';
+import { authService } from '@/lib/auth';
+import { useAuthStore } from '@/lib/store';
+import { RegisterData } from '@/lib/types';
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [accountType, setAccountType] = useState('client'); // 'client' or 'professional'
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    location: '',
-    company: '',
-    role: '',
-    specializations: [] as string[],
-    agreeTos: false,
-    agreeMarketing: false
-  });
+  const [accountType, setAccountType] = useState<'client' | 'home_pro' | 'specialist' | 'crew_member'>('client');
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { setUser, setTokens } = useAuthStore();
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+  } = useForm<RegisterData & { 
+    password_confirm: string;
+    agreeTos: boolean;
+    agreeMarketing: boolean;
+  }>();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle registration logic here
-    console.log('Registration attempt:', { accountType, ...formData });
+  const password = watch('password');
+
+  const onSubmit = async (data: RegisterData & { 
+    password_confirm: string;
+    agreeTos: boolean;
+    agreeMarketing: boolean;
+  }) => {
+    if (!data.agreeTos) {
+      toast.error('You must agree to the Terms and Conditions');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const registerData: RegisterData = {
+        username: data.email, // Use email as username
+        email: data.email,
+        password: data.password,
+        password_confirm: data.password_confirm,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        user_type: accountType,
+        location: data.location || '',
+        company_name: '',
+        bio: '',
+      };
+      
+      // Only include phone if it's provided and not empty
+      if (data.phone && data.phone.trim() !== '') {
+        registerData.phone = data.phone;
+      }
+      
+      const response = await authService.register(registerData);
+      
+      // Save user data and tokens
+      setUser(response.user);
+      setTokens(response.tokens);
+      
+      toast.success('Account created successfully! Welcome to A-List');
+      
+      // Redirect based on user type
+      if (response.user.user_type === 'client') {
+        router.push('/dashboard/client');
+      } else {
+        router.push('/dashboard/professional');
+      }
+    } catch (error: any) {
+      console.error('Registration error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
+      });
+      
+      // Clear any previous error states
+      let errorMessage = '';
+      
+      if (error.response?.status === 400 && error.response?.data?.errors) {
+        // Handle validation errors
+        const errors = error.response.data.errors;
+        const errorMessages = Object.entries(errors)
+          .map(([field, messages]) => {
+            const fieldName = field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return `${fieldName}: ${(messages as string[]).join(', ')}`;
+          })
+          .join('\n');
+        errorMessage = errorMessages;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = 'An unexpected error occurred. Please try again.';
+      }
+      
+      // Show error only once
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSpecializationToggle = (specialization: string) => {
-    setFormData(prev => ({
-      ...prev,
-      specializations: prev.specializations.includes(specialization)
-        ? prev.specializations.filter(s => s !== specialization)
-        : [...prev.specializations, specialization]
-    }));
-  };
-
-  const roles = [
-    { value: 'home-pro', label: 'Home Pro', description: 'المحترف الذي ينفذ الخدمة' },
-    { value: 'specialist', label: 'A-List Specialist', description: 'مستشار يقوم بالتنسيق والتخطيط' },
-    { value: 'crew-member', label: 'Crew Member', description: 'عضو فريق يتم توظيفه في مهمات صغيرة أو مساعدات' }
+  const userTypes = [
+    { value: 'home_pro', label: 'Home Pro', description: 'Professional who executes the service' },
+    { value: 'specialist', label: 'A-List Specialist', description: 'Consultant who coordinates and plans' },
+    { value: 'crew_member', label: 'Crew Member', description: 'Team member hired for small tasks or assistance' }
   ];
 
-  const specializations = [
-    'Kitchen Remodeling',
-    'Bathroom Renovation',
-    'Electrical Work',
-    'Plumbing',
-    'Roofing',
-    'HVAC Services',
-    'Landscaping',
-    'Painting',
-    'Flooring',
-    'Carpentry',
-    'Interior Design',
-    'General Contractor'
-  ];
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -71,8 +131,63 @@ export default function RegisterPage() {
           {/* Header */}
           <div className="text-center">
             <Link href="/" className="inline-flex items-center space-x-2 mb-8">
+              {/* 
+                DEVELOPMENT GUIDELINES - قواعد التطوير
+                
+                القواعد الأساسية للتطوير:
+                
+                1. تحليل الصفحات والـ APIs
+                - قراءة الكود أولاً: عند إعطاء صفحة جديدة، يجب قراءة جزء الفرونت إند والباك إند أولاً
+                - فهم الـ API: تحديد نقاط الربط (endpoints) والعناصر المطلوبة في كل API
+                - الربط الاحترافي: ربط كل حقل في الفرونت إند بما يناسبه في الباك إند بدقة
+                
+                2. إدارة الخوادم (Servers)
+                - خادم واحد للباك إند: http://127.0.0.1:8000/
+                - خادم واحد للفرونت إند: http://localhost:3000
+                - عدم فتح خوادم متعددة: تجنب إنشاء terminals كثيرة والعمل على خادمين فقط
+                
+                3. معالجة الأخطاء
+                - متابعة الأخطاء: عند ظهور خطأ، يجب متابعته وتوقع السبب
+                - حل الأخطاء بذكاء: إصلاح الخطأ دون إفساد أجزاء أخرى من النظام
+                - تجنب الأخطاء الشائعة: أخطاء المصادقة، مشاكل تثبيت المكتبات، ملفات ناقصة
+                
+                4. العمل مع النماذج (Forms)
+                - التحقق من إرسال البيانات: التأكد من أن البيانات ترسل بالشكل الصحيح
+                - حفظ النماذج: ضمان حفظ البيانات في قاعدة البيانات
+                - الربط مع الباك إند: التأكد من ربط النموذج بالـ API المناسب
+                
+                5. التطوير الذكي
+                - الكفاءة في التطوير: إنجاز المطلوب بأقل تعقيد ممكن
+                - عدم إفساد الأجزاء الأخرى: الحذر عند تطوير جزء معين لعدم تأثير أجزاء أخرى
+                - إضافة عناصر جديدة: عند الحاجة لإضافة عناصر في الصفحة، ربطها بالباك إند حسب المطلوب
+                
+                6. هيكل المشروع
+                homs/
+                ├── client/          # Frontend (Next.js)
+                │   ├── src/
+                │   │   ├── app/     # Pages
+                │   │   ├── components/  # Components
+                │   │   └── lib/     # Utilities & Services
+                │   └── package.json
+                └── server/          # Backend (Django)
+                    ├── authentication/
+                    ├── projects/
+                    ├── proposals/
+                    └── manage.py
+                
+                7. اللغة المستخدمة في العمل
+                - اللغة الإنجليزية: جميع أعمال التطوير والبرمجة ستكون باللغة الإنجليزية
+                - أسماء المتغيرات والدوال: يجب أن تكون باللغة الإنجليزية
+                - التعليقات في الكود: يفضل كتابتها باللغة الإنجليزية
+                - أسماء الملفات والمجلدات: باللغة الإنجليزية فقط
+                
+                8. نصائح إضافية
+                - استخدام Git بحذر: عمل commit للتغييرات المهمة
+                - اختبار الوظائف: التأكد من عمل الوظائف قبل الانتقال للمرحلة التالية
+                - التوثيق: توثيق التغييرات المهمة في هذا الملف
+              */}
               <div className="bg-gradient-to-r from-primary-500 to-accent-500 p-2 rounded-xl">
-                <img src="/logo.png" alt="A-List Home Pros" className="h-8 w-auto" />
+                <img src="/logo.svg" alt="A-List Home Pros" className="h-8 w-auto" />
               </div>
               <div className="font-heading font-bold text-xl">
                 <span className="text-gradient-primary">A-List</span>
@@ -81,7 +196,7 @@ export default function RegisterPage() {
             </Link>
             
             <h2 className="font-heading font-bold text-3xl text-dark-900 mb-2">
-              Create Your Account
+              Create New Account
             </h2>
             <p className="text-dark-600">
               Join thousands of homeowners and professionals
@@ -89,71 +204,117 @@ export default function RegisterPage() {
           </div>
 
           {/* Account Type Selection */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <button
-              type="button"
-              onClick={() => setAccountType('client')}
-              className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                accountType === 'client'
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Users className={`h-8 w-8 mx-auto mb-2 ${accountType === 'client' ? 'text-primary-500' : 'text-gray-400'}`} />
-              <div className="font-semibold">I&apos;m a Client</div>
-              <div className="text-sm opacity-75">Looking for professionals</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setAccountType('professional')}
-              className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                accountType === 'professional'
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Shield className={`h-8 w-8 mx-auto mb-2 ${accountType === 'professional' ? 'text-primary-500' : 'text-gray-400'}`} />
-              <div className="font-semibold">I&apos;m a Pro</div>
-              <div className="text-sm opacity-75">Offering services</div>
-            </button>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-dark-700 mb-3">
+              Account Type
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setAccountType('client')}
+                className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                  accountType === 'client'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Users className={`h-8 w-8 mx-auto mb-2 ${accountType === 'client' ? 'text-primary-500' : 'text-gray-400'}`} />
+                <div className="font-semibold">Client</div>
+                <div className="text-sm opacity-75">Looking for professionals</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType('home_pro')}
+                className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                  accountType === 'home_pro'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Shield className={`h-8 w-8 mx-auto mb-2 ${accountType === 'home_pro' ? 'text-primary-500' : 'text-gray-400'}`} />
+                <div className="font-semibold">Professional</div>
+                <div className="text-sm opacity-75">Offering services</div>
+              </button>
+            </div>
+            
+            {/* Professional Type Selection */}
+            {accountType !== 'client' && (
+              <div className="mt-4 space-y-2">
+                <label className="block text-sm font-medium text-dark-700">
+                  Professional Type
+                </label>
+                {userTypes.map((type) => (
+                  <label key={type.value} className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="userType"
+                      value={type.value}
+                      checked={accountType === type.value}
+                      onChange={(e) => setAccountType(e.target.value as any)}
+                      className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 focus:ring-primary-500"
+                    />
+                    <div className="ml-3">
+                      <div className="font-medium text-gray-900">{type.label}</div>
+                      <div className="text-sm text-gray-600">{type.description}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Registration Form */}
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-dark-700 mb-2">
+                <label htmlFor="first_name" className="block text-sm font-medium text-dark-700 mb-2">
                   First Name
                 </label>
                 <div className="relative">
                   <input
-                    id="firstName"
-                    name="firstName"
+                    id="first_name"
                     type="text"
-                    required
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    {...register('first_name', {
+                      required: 'First name is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Name must be at least 2 characters'
+                      }
+                    })}
+                    className={`w-full bg-white border rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.first_name ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="John"
                   />
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
+                {errors.first_name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.first_name.message}</p>
+                )}
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-dark-700 mb-2">
+                <label htmlFor="last_name" className="block text-sm font-medium text-dark-700 mb-2">
                   Last Name
                 </label>
                 <input
-                  id="lastName"
-                  name="lastName"
+                  id="last_name"
                   type="text"
-                  required
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  {...register('last_name', {
+                    required: 'Last name is required',
+                    minLength: {
+                      value: 2,
+                      message: 'Name must be at least 2 characters'
+                    }
+                  })}
+                  className={`w-full bg-white border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    errors.last_name ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Doe"
                 />
+                {errors.last_name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.last_name.message}</p>
+                )}
               </div>
             </div>
 
@@ -165,37 +326,52 @@ export default function RegisterPage() {
               <div className="relative">
                 <input
                   id="email"
-                  name="email"
                   type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  {...register('email', {
+                    required: 'Email address is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Invalid email address'
+                    }
+                  })}
+                  className={`w-full bg-white border rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="john@example.com"
                 />
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              )}
             </div>
 
             {/* Phone and Location */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-dark-700 mb-2">
-                  Phone Number
+                  Phone Number (Optional)
                 </label>
                 <div className="relative">
                   <input
                     id="phone"
-                    name="phone"
                     type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="(555) 123-4567"
+                    {...register('phone', {
+                      pattern: {
+                        value: /^[+]?[0-9\s\-\(\)]{10,}$/,
+                        message: 'Invalid phone number'
+                      }
+                    })}
+                    className={`w-full bg-white border rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.phone ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="+1 (555) 123-4567"
                   />
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="location" className="block text-sm font-medium text-dark-700 mb-2">
@@ -204,83 +380,24 @@ export default function RegisterPage() {
                 <div className="relative">
                   <input
                     id="location"
-                    name="location"
                     type="text"
-                    required
-                    value={formData.location}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="City, State"
+                    {...register('location', {
+                      required: 'Location is required'
+                    })}
+                    className={`w-full bg-white border rounded-xl px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                      errors.location ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="New York, NY"
                   />
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
+                {errors.location && (
+                  <p className="mt-1 text-sm text-red-600">{errors.location.message}</p>
+                )}
               </div>
             </div>
 
-            {/* Professional-specific fields */}
-            {accountType === 'professional' && (
-              <>
-                <div>
-                  <label htmlFor="company" className="block text-sm font-medium text-dark-700 mb-2">
-                    Company Name (Optional)
-                  </label>
-                  <input
-                    id="company"
-                    name="company"
-                    type="text"
-                    value={formData.company}
-                    onChange={(e) => handleInputChange('company', e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="ABC Home Services"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-dark-700 mb-3">
-                    Role *
-                  </label>
-                  <div className="space-y-3">
-                    {roles.map((role) => (
-                      <label key={role.value} className="flex items-start space-x-3 p-4 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="role"
-                          value={role.value}
-                          checked={formData.role === role.value}
-                          onChange={(e) => handleInputChange('role', e.target.value)}
-                          className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 focus:ring-primary-500 mt-1"
-                          required
-                        />
-                        <div className="flex-1">
-                          <div className="font-semibold text-dark-900 mb-1">{role.label}</div>
-                          <div className="text-sm text-dark-600">{role.description}</div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-dark-700 mb-3">
-                    Specializations (Select all that apply)
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto border border-gray-200 rounded-xl p-4 bg-gray-50">
-                    {specializations.map((specialization, index) => (
-                      <label key={index} className="flex items-center space-x-3 p-2 hover:bg-white hover:rounded-lg transition-all duration-200 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.specializations.includes(specialization)}
-                          onChange={() => handleSpecializationToggle(specialization)}
-                          className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500"
-                        />
-                        <span className="text-sm text-dark-700">{specialization}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">Select at least one specialization</p>
-                </div>
-              </>
-            )}
 
             {/* Password Fields */}
             <div>
@@ -290,12 +407,21 @@ export default function RegisterPage() {
               <div className="relative">
                 <input
                   id="password"
-                  name="password"
                   type={showPassword ? 'text' : 'password'}
-                  required
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: {
+                      value: 8,
+                      message: 'Password must be at least 8 characters'
+                    },
+                    pattern: {
+                      value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                      message: 'Password must contain uppercase, lowercase and number'
+                    }
+                  })}
+                  className={`w-full bg-white border rounded-xl px-4 py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Create a strong password"
                 />
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -307,21 +433,29 @@ export default function RegisterPage() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-dark-700 mb-2">
+              <label htmlFor="password_confirm" className="block text-sm font-medium text-dark-700 mb-2">
                 Confirm Password
               </label>
               <div className="relative">
                 <input
-                  id="confirmPassword"
-                  name="confirmPassword"
+                  id="password_confirm"
                   type={showConfirmPassword ? 'text' : 'password'}
-                  required
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  {...register('password_confirm', {
+                    required: 'Password confirmation is required',
+                    validate: (value) => {
+                      const password = watch('password');
+                      return value === password || 'Passwords do not match';
+                    }
+                  })}
+                  className={`w-full bg-white border rounded-xl px-4 py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    errors.password_confirm ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Confirm your password"
                 />
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -333,6 +467,9 @@ export default function RegisterPage() {
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {errors.password_confirm && (
+                <p className="mt-1 text-sm text-red-600">{errors.password_confirm.message}</p>
+              )}
             </div>
 
             {/* Agreements */}
@@ -340,15 +477,15 @@ export default function RegisterPage() {
               <label className="flex items-start space-x-3">
                 <input
                   type="checkbox"
-                  checked={formData.agreeTos}
-                  onChange={(e) => handleInputChange('agreeTos', e.target.checked)}
+                  {...register('agreeTos', {
+                    required: 'You must agree to the Terms and Conditions'
+                  })}
                   className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 mt-1"
-                  required
                 />
                 <span className="text-sm text-dark-700">
                   I agree to the{' '}
                   <Link href="/terms" className="text-primary-600 hover:text-primary-700 font-medium">
-                    Terms of Service
+                    Terms and Conditions
                   </Link>{' '}
                   and{' '}
                   <Link href="/privacy" className="text-primary-600 hover:text-primary-700 font-medium">
@@ -356,11 +493,13 @@ export default function RegisterPage() {
                   </Link>
                 </span>
               </label>
+              {errors.agreeTos && (
+                <p className="mt-1 text-sm text-red-600">{errors.agreeTos.message}</p>
+              )}
               <label className="flex items-start space-x-3">
                 <input
                   type="checkbox"
-                  checked={formData.agreeMarketing}
-                  onChange={(e) => handleInputChange('agreeMarketing', e.target.checked)}
+                  {...register('agreeMarketing')}
                   className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 mt-1"
                 />
                 <span className="text-sm text-dark-700">
@@ -372,9 +511,10 @@ export default function RegisterPage() {
             {/* Register Button */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-primary-500 to-primary-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-primary-600 hover:to-primary-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              Create Account
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
 
             {/* Divider */}
@@ -383,7 +523,7 @@ export default function RegisterPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">Or sign up with</span>
+                <span className="px-2 bg-gray-50 text-gray-500">Or register with</span>
               </div>
             </div>
 
@@ -533,4 +673,4 @@ export default function RegisterPage() {
       </div>
     </div>
   );
-} 
+}

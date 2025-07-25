@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, Upload, MapPin, DollarSign, FileText, CheckCircle, Shield } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronDown, Upload, MapPin, DollarSign, FileText, CheckCircle, Shield, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { projectsService } from '@/lib/projects';
+import { authService } from '@/lib/auth';
+import { fileUploadService, type UploadedFile } from '@/lib/fileUpload';
 
 export default function PostProjectPage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -15,23 +21,48 @@ export default function PostProjectPage() {
     skills: [] as string[],
     requiredRoles: [] as string[],
     images: [] as string[],
-    urgency: 'flexible'
+    urgency: 'normal',
+    additionalRequirements: ''
   });
 
-  const categories = [
-    'Kitchen Remodeling',
-    'Bathroom Renovation',
-    'Electrical Work',
-    'Plumbing',
-    'Roofing',
-    'HVAC Services',
-    'Landscaping',
-    'Painting',
-    'Flooring',
-    'Carpentry',
-    'Interior Design',
-    'General Handyman'
-  ];
+  const [categories, setCategories] = useState<any[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<UploadedFile[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch categories and check authentication
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (!user) {
+          router.push('/login');
+          return;
+        }
+        if (user.user_type !== 'client') {
+          alert('Only clients can create projects');
+          router.push('/');
+          return;
+        }
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        router.push('/login');
+      }
+    };
+
+    const fetchCategories = async () => {
+      try {
+        const categories = await projectsService.getCategories();
+        setCategories(categories || []);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        setCategories([]);
+      }
+    };
+
+    checkAuth();
+    fetchCategories();
+  }, [router]);
 
   const budgetRanges = [
     'Under $500',
@@ -94,9 +125,139 @@ export default function PostProjectPage() {
     }));
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingImages(true);
+    try {
+      console.log('Starting image upload for', files.length, 'files');
+      
+      const uploadPromises = Array.from(files).map(async (file, index) => {
+        console.log(`Uploading file ${index + 1}:`, file.name, 'Size:', file.size, 'Type:', file.type);
+        
+        try {
+          const result = await fileUploadService.uploadFile({
+            file,
+            upload_purpose: 'project_image',
+            description: `Project image for ${formData.title}`,
+            is_public: true,
+            is_temp: false
+          });
+          console.log(`File ${index + 1} uploaded successfully:`, result);
+          return result;
+        } catch (fileError) {
+          console.error(`Failed to upload file ${index + 1}:`, fileError);
+          throw fileError;
+        }
+      });
+
+      const uploadedFiles = await Promise.all(uploadPromises);
+      setUploadedImages(prev => [...prev, ...uploadedFiles]);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      console.log('All files uploaded successfully');
+    } catch (error: any) {
+      console.error('Failed to upload images:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      alert(`Failed to upload images: ${error.response?.data?.detail || error.message || 'Unknown error'}`);
+    } finally {
+      setIsUploadingImages(false);
+    }
+  };
+
+  const handleRemoveImage = (imageId: number) => {
+    setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
   const handleNext = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      // Validate required fields
+      if (!formData.title || !formData.category || !formData.description || !formData.location) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      // Find category ID
+      const selectedCategory = categories.find(cat => cat.name === formData.category);
+      if (!selectedCategory) {
+        alert('Please select a valid category');
+        return;
+      }
+
+      // Parse budget
+      let budgetMin = null;
+      let budgetMax = null;
+      let budgetType = 'estimate';
+
+      if (formData.budget) {
+        const budgetStr = formData.budget.toLowerCase();
+        if (budgetStr.includes('under')) {
+          budgetMax = parseInt(budgetStr.replace(/[^0-9]/g, ''));
+          budgetType = 'estimate';
+        } else if (budgetStr.includes('over')) {
+          budgetMin = parseInt(budgetStr.replace(/[^0-9]/g, ''));
+          budgetType = 'estimate';
+        } else {
+          // Handle range like "$1,000 - $2,500"
+          const numbers = budgetStr.match(/\d+(?:,\d+)*/g);
+          if (numbers && numbers.length >= 2) {
+            budgetMin = parseInt(numbers[0].replace(/,/g, ''));
+            budgetMax = parseInt(numbers[1].replace(/,/g, ''));
+            budgetType = 'estimate';
+          } else if (numbers && numbers.length === 1) {
+            budgetMin = parseInt(numbers[0].replace(/,/g, ''));
+            budgetType = 'fixed';
+          }
+        }
+      }
+
+      // Prepare project data
+      const projectData = {
+        title: formData.title,
+        description: formData.description,
+        category: selectedCategory.id,
+        location: formData.location,
+        budget_type: budgetType,
+        budget_min: budgetMin,
+        budget_max: budgetMax,
+        timeline: formData.timeline,
+        required_skills: formData.skills,
+        required_roles: formData.requiredRoles,
+        additional_requirements: formData.additionalRequirements || '',
+        urgency: formData.urgency || 'normal',
+        is_remote_allowed: false,
+        requires_license: false,
+        requires_insurance: false,
+        image_ids: uploadedImages.map(img => img.id).filter(id => id !== null && id !== undefined)
+      };
+
+      // Create project
+      const response = await projectsService.createProject(projectData);
+      
+      alert('Project created successfully!');
+      router.push('/projects');
+    } catch (error: any) {
+      console.error('Failed to create project:', error);
+      alert(error.response?.data?.message || 'Failed to create project. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -132,8 +293,8 @@ export default function PostProjectPage() {
                   className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none"
                 >
                   <option value="">Select a category</option>
-                  {categories.map((category, index) => (
-                    <option key={index} value={category}>{category}</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.name}>{category.name}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -175,7 +336,7 @@ export default function PostProjectPage() {
               <label className="block text-sm font-semibold text-dark-900 mb-4">Required Skills & Qualifications</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {skillsOptions.map((skill, index) => (
-                  <label key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
+                  <label key={`skill-${index}`} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.skills.includes(skill)}
@@ -215,16 +376,52 @@ export default function PostProjectPage() {
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-dark-900 mb-2">Upload Project Images</h3>
                 <p className="text-gray-600 mb-4">Add photos of the space, inspiration images, or reference materials</p>
-                <button className="bg-primary-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors duration-200">
-                  Choose Files
-                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="bg-primary-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors duration-200 cursor-pointer inline-block"
+                >
+                  {isUploadingImages ? 'Uploading...' : 'Choose Files'}
+                </label>
                 <p className="text-sm text-gray-500 mt-2">PNG, JPG up to 10MB each</p>
               </div>
+
+              {/* Display uploaded images */}
+              {uploadedImages.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+                  {uploadedImages.map((image) => (
+                    <div key={image.id} className="relative group">
+                      <img
+                        src={image.file}
+                        alt={image.original_filename}
+                        className="w-full h-24 object-cover rounded-lg border"
+                      />
+                      <button
+                        onClick={() => handleRemoveImage(image.id)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <p className="text-xs text-gray-500 mt-1 truncate">{image.original_filename}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-dark-900 mb-3">Additional Requirements</label>
               <textarea
+                value={formData.additionalRequirements}
+                onChange={(e) => setFormData(prev => ({ ...prev, additionalRequirements: e.target.value }))}
                 rows={4}
                 placeholder="Any specific requirements, materials preferences, or special instructions..."
                 className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
@@ -240,7 +437,7 @@ export default function PostProjectPage() {
               <label className="block text-sm font-semibold text-dark-900 mb-3">Project Budget *</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {budgetRanges.map((budget, index) => (
-                  <label key={index} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
+                  <label key={`budget-${index}`} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
                     <input
                       type="radio"
                       name="budget"
@@ -259,7 +456,7 @@ export default function PostProjectPage() {
               <label className="block text-sm font-semibold text-dark-900 mb-3">Timeline *</label>
               <div className="space-y-3">
                 {timelineOptions.map((timeline, index) => (
-                  <label key={index} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
+                  <label key={`timeline-${index}`} className="flex items-center space-x-3 p-4 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
                     <input
                       type="radio"
                       name="timeline"
@@ -279,10 +476,10 @@ export default function PostProjectPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                   { value: 'urgent', label: 'Urgent', desc: 'Need to start immediately' },
-                  { value: 'moderate', label: 'Moderate', desc: 'Can wait a few weeks' },
-                  { value: 'flexible', label: 'Flexible', desc: 'No rush, quality matters' }
+                  { value: 'normal', label: 'Normal', desc: 'Can wait a few weeks' },
+                  { value: 'low', label: 'Flexible', desc: 'No rush, quality matters' }
                 ].map((urgency, index) => (
-                  <label key={index} className="flex flex-col space-y-2 p-4 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
+                  <label key={`urgency-${index}`} className="flex flex-col space-y-2 p-4 border border-gray-200 rounded-xl hover:bg-primary-50 hover:border-primary-300 transition-all duration-200 cursor-pointer">
                     <div className="flex items-center space-x-2">
                       <input
                         type="radio"
@@ -339,7 +536,7 @@ export default function PostProjectPage() {
                     <span className="text-sm font-medium text-dark-600">Required Skills:</span>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {formData.skills.map((skill, index) => (
-                        <span key={index} className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-xs">
+                        <span key={`summary-skill-${index}`} className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-xs">
                           {skill}
                         </span>
                       ))}
@@ -354,7 +551,7 @@ export default function PostProjectPage() {
                       {formData.requiredRoles.map((roleValue, index) => {
                         const role = roleOptions.find(r => r.value === roleValue);
                         return (
-                          <span key={index} className="bg-accent-100 text-accent-700 px-2 py-1 rounded-full text-xs">
+                          <span key={`summary-role-${index}`} className="bg-accent-100 text-accent-700 px-2 py-1 rounded-full text-xs">
                             {role?.label}
                           </span>
                         );
@@ -445,7 +642,7 @@ export default function PostProjectPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {steps.map((step, index) => (
-              <div key={step.number} className="flex items-center">
+              <div key={`step-${step.number}`} className="flex items-center">
                 <div className="flex flex-col items-center">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-200 ${
                     currentStep >= step.number
@@ -518,8 +715,12 @@ export default function PostProjectPage() {
                     Continue →
                   </button>
                 ) : (
-                  <button className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-primary-600 hover:to-accent-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
-                    Post Project
+                  <button 
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-primary-600 hover:to-accent-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? 'Creating Project...' : 'Post Project'}
                   </button>
                 )}
               </div>
@@ -551,4 +752,4 @@ export default function PostProjectPage() {
       </section>
     </div>
   );
-} 
+}

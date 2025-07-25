@@ -1,0 +1,124 @@
+{
+  "info": {
+    "name": "A-List Home Professionals API - English",
+    "description": "Complete API collection for A-List platform with English sample data",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login Professional",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"mike.pro@example.com\", \"password\": \"password123\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register New Professional",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"emma_designer\", \"email\": \"emma.designer@example.com\", \"password\": \"SecurePass123!\", \"password_confirm\": \"SecurePass123!\", \"first_name\": \"Emma\", \"last_name\": \"Davis\", \"user_type\": \"home_pro\", \"location\": \"Austin, TX\", \"bio\": \"Interior designer with focus on sustainable and eco-friendly designs\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Create Kitchen Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Modern Kitchen Renovation\", \"description\": \"Looking for professional contractor to renovate our outdated kitchen with modern design and appliances\", \"budget_min\": 20000, \"budget_max\": 35000, \"currency\": \"USD\", \"location\": \"Denver, CO\", \"duration_days\": 42, \"skills_required\": [\"Kitchen Design\", \"Cabinetry\", \"Countertops\", \"Appliance Installation\"], \"project_type\": \"fixed\", \"urgency\": \"medium\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/projects/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

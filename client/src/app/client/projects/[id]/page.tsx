@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
@@ -24,8 +24,22 @@ import {
   AlertTriangle,
   ArrowRight,
   Flag,
-  Info
+  Info,
+  Users,
+  Eye,
+  ThumbsUp,
+  Award,
+  Briefcase,
+  TrendingUp,
+  Filter,
+  Search,
+  ChevronDown,
+  ExternalLink,
+  MapPin,
+  AlertCircle
 } from 'lucide-react';
+import { proposalsService, Proposal } from '@/lib/proposals';
+import { portfolioService } from '@/lib/portfolio';
 
 interface Milestone {
   id: number;
@@ -52,8 +66,15 @@ export default function ProjectDetailPage() {
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loadingProposals, setLoadingProposals] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [showProposalModal, setShowProposalModal] = useState(false);
+  const [proposalFilter, setProposalFilter] = useState('all');
+  const [proposalSort, setProposalSort] = useState('newest');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // بيانات المشروع (يجب جلبها من API بناءً على projectId)
+  // Project data (should be fetched from API based on projectId)
   const project = {
     id: projectId,
     title: 'Kitchen Renovation',
@@ -109,6 +130,26 @@ export default function ProjectDetailPage() {
       { name: 'Progress Photos', type: 'ZIP', size: '12.4 MB', url: '#' }
     ]
   };
+
+  // Fetch proposals when component mounts
+  useEffect(() => {
+    const fetchProposals = async () => {
+      if (project.status === 'published' || project.status === 'draft') {
+        setLoadingProposals(true);
+        try {
+          const projectId = parseInt(project.id.split('-')[0].replace('project', ''));
+          const response = await proposalsService.getProjectProposals(projectId);
+          setProposals(response.results);
+        } catch (error) {
+          console.error('Failed to fetch proposals:', error);
+        } finally {
+          setLoadingProposals(false);
+        }
+      }
+    };
+
+    fetchProposals();
+  }, [project.id, project.status]);
 
   const milestones = [
     {
@@ -215,15 +256,92 @@ export default function ProjectDetailPage() {
     }
   ];
 
+  // Helper functions for proposals
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'accepted': return 'bg-green-100 text-green-800 border-green-200';
+      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
+      case 'withdrawn': return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'expired': return 'bg-orange-100 text-orange-800 border-orange-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-800';
+      case 'high': return 'bg-orange-100 text-orange-800';
+      case 'normal': return 'bg-blue-100 text-blue-800';
+      case 'low': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const filteredProposals = proposals.filter(proposal => {
+    const matchesFilter = proposalFilter === 'all' || proposal.status === proposalFilter;
+    const matchesSearch = searchQuery === '' || 
+      proposal.professional.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      proposal.cover_letter.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  const sortedProposals = [...filteredProposals].sort((a, b) => {
+    switch (proposalSort) {
+      case 'newest':
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case 'oldest':
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      case 'amount_low':
+        return parseFloat(a.amount) - parseFloat(b.amount);
+      case 'amount_high':
+        return parseFloat(b.amount) - parseFloat(a.amount);
+      case 'rating':
+        return b.professional.rating_average - a.professional.rating_average;
+      default:
+        return 0;
+    }
+  });
+
+  const handleAcceptProposal = async (proposalId: string) => {
+    try {
+      await proposalsService.acceptProposal(proposalId);
+      // Refresh proposals
+      const projectId = parseInt(project.id.split('-')[0].replace('project', ''));
+      const response = await proposalsService.getProjectProposals(projectId);
+      setProposals(response.results);
+      setShowProposalModal(false);
+    } catch (error) {
+      console.error('Failed to accept proposal:', error);
+    }
+  };
+
+  const handleRejectProposal = async (proposalId: string, reason?: string) => {
+    try {
+      await proposalsService.rejectProposal(proposalId, reason);
+      // Refresh proposals
+      const projectId = parseInt(project.id.split('-')[0].replace('project', ''));
+      const response = await proposalsService.getProjectProposals(projectId);
+      setProposals(response.results);
+      setShowProposalModal(false);
+    } catch (error) {
+      console.error('Failed to reject proposal:', error);
+    }
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: FileText },
     { id: 'milestones', label: 'Milestones', icon: CheckCircle },
+    { id: 'proposals', label: 'Proposals', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'messages', label: 'Messages', icon: MessageCircle },
     { id: 'documents', label: 'Documents', icon: FileText }
   ];
 
-  const getStatusColor = (status: string) => {
+  // Show proposals count in tab if project is accepting proposals
+  const showProposalsCount = project.status === 'published' || project.status === 'draft';
+
+  const getProjectStatusColor = (status: string) => {
     switch (status) {
       case 'In Progress':
         return 'bg-blue-100 text-blue-800';
@@ -305,7 +423,7 @@ export default function ProjectDetailPage() {
                   <span>{pendingRequests.length} Payment Request{pendingRequests.length > 1 ? 's' : ''}</span>
                 </div>
               )}
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(project.status)}`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getProjectStatusColor(project.status)}`}>
                 {project.status}
               </span>
             </div>
@@ -402,6 +520,11 @@ export default function ProjectDetailPage() {
                       {tab.id === 'payments' && pendingRequests.length > 0 && (
                         <span className="bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                           {pendingRequests.length}
+                        </span>
+                      )}
+                      {tab.id === 'proposals' && showProposalsCount && proposals.length > 0 && (
+                        <span className="bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                          {proposals.length}
                         </span>
                       )}
                     </button>
@@ -581,6 +704,170 @@ export default function ProjectDetailPage() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Proposals Tab */}
+                {activeTab === 'proposals' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg text-dark-900">Project Proposals</h3>
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm text-gray-600">
+                          {proposals.length} proposal{proposals.length !== 1 ? 's' : ''} received
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Filters and Search */}
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 md:space-x-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Search proposals..."
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                            />
+                          </div>
+                          <select
+                            value={proposalFilter}
+                            onChange={(e) => setProposalFilter(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                          >
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Filter className="h-4 w-4 text-gray-500" />
+                          <select
+                            value={proposalSort}
+                            onChange={(e) => setProposalSort(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                          >
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="amount_low">Lowest Amount</option>
+                            <option value="amount_high">Highest Amount</option>
+                            <option value="rating">Highest Rated</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Proposals List */}
+                    {loadingProposals ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                      </div>
+                    ) : sortedProposals.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h4 className="text-lg font-medium text-gray-900 mb-2">No proposals yet</h4>
+                        <p className="text-gray-600">Proposals will appear here once professionals submit them.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {sortedProposals.map((proposal) => (
+                          <div key={proposal.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow duration-200">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-start space-x-4">
+                                <img
+                                  src={proposal.professional.avatar || '/default-avatar.png'}
+                                  alt={proposal.professional.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-3 mb-2">
+                                    <h4 className="font-semibold text-dark-900">{proposal.professional.name}</h4>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
+                                      {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
+                                    </span>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(proposal.priority)}`}>
+                                      {proposal.priority.charAt(0).toUpperCase() + proposal.priority.slice(1)} Priority
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+                                    <div className="flex items-center space-x-1">
+                                      <MapPin className="h-4 w-4" />
+                                      <span>{proposal.professional.location}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <Award className="h-4 w-4" />
+                                      <span>{proposal.professional.rating}/5 ({proposal.professional.reviews_count} reviews)</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <Briefcase className="h-4 w-4" />
+                                      <span>{proposal.professional.completed_projects} projects</span>
+                                    </div>
+                                  </div>
+                                  <p className="text-gray-700 text-sm leading-relaxed">{proposal.cover_letter}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-dark-900 mb-1">${proposal.amount.toLocaleString()}</div>
+                                <div className="text-sm text-gray-600">{proposal.timeline} delivery</div>
+                                {proposal.estimated_hours && (
+                                  <div className="text-sm text-gray-600">{proposal.estimated_hours} hours</div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Proposal Actions */}
+                            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                              <div className="flex items-center space-x-4">
+                                <button
+                                  onClick={() => setSelectedProposal(proposal)}
+                                  className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span>View Details</span>
+                                </button>
+                                <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 text-sm font-medium">
+                                  <ExternalLink className="h-4 w-4" />
+                                  <span>View Profile</span>
+                                </button>
+                              </div>
+                              {proposal.status === 'pending' && (
+                                <div className="flex items-center space-x-3">
+                                  <button
+                                    onClick={() => handleRejectProposal(proposal.id)}
+                                    className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors duration-200 text-sm font-medium"
+                                  >
+                                    Decline
+                                  </button>
+                                  <button
+                                    onClick={() => handleAcceptProposal(proposal.id)}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2"
+                                  >
+                                    <ThumbsUp className="h-4 w-4" />
+                                    <span>Accept</span>
+                                  </button>
+                                </div>
+                              )}
+                              {proposal.status === 'accepted' && (
+                                <div className="flex items-center space-x-2 text-green-600">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span className="text-sm font-medium">Accepted</span>
+                                </div>
+                              )}
+                              {proposal.status === 'rejected' && (
+                                <div className="flex items-center space-x-2 text-red-600">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <span className="text-sm font-medium">Declined</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -869,6 +1156,170 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
+      {/* Proposal Detail Modal */}
+      {selectedProposal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-dark-900">Proposal Details</h3>
+                <button
+                  onClick={() => setSelectedProposal(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Professional Header */}
+              <div className="flex items-start space-x-4">
+                <img
+                  src={selectedProposal.professional.avatar || '/default-avatar.png'}
+                  alt={selectedProposal.professional.name}
+                  className="w-16 h-16 rounded-full object-cover"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h4 className="text-xl font-semibold text-dark-900">{selectedProposal.professional.name}</h4>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedProposal.status)}`}>
+                      {selectedProposal.status.charAt(0).toUpperCase() + selectedProposal.status.slice(1)}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-6 text-sm text-gray-600 mb-3">
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="h-4 w-4" />
+                      <span>{selectedProposal.professional.location}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Award className="h-4 w-4" />
+                      <span>{selectedProposal.professional.rating}/5 ({selectedProposal.professional.reviews_count} reviews)</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Briefcase className="h-4 w-4" />
+                      <span>{selectedProposal.professional.completed_projects} projects completed</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-3xl font-bold text-dark-900">${selectedProposal.amount.toLocaleString()}</div>
+                    <div className="text-gray-600">{selectedProposal.timeline} delivery</div>
+                    {selectedProposal.estimated_hours && (
+                      <div className="text-gray-600">{selectedProposal.estimated_hours} hours estimated</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Cover Letter */}
+              <div>
+                <h5 className="font-semibold text-dark-900 mb-3">Cover Letter</h5>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-700 leading-relaxed">{selectedProposal.cover_letter}</p>
+                </div>
+              </div>
+
+              {/* Milestones */}
+              {selectedProposal.milestones && selectedProposal.milestones.length > 0 && (
+                <div>
+                  <h5 className="font-semibold text-dark-900 mb-3">Proposed Milestones</h5>
+                  <div className="space-y-3">
+                    {selectedProposal.milestones.map((milestone, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h6 className="font-medium text-dark-900">{milestone.title}</h6>
+                          <span className="font-semibold text-dark-900">${milestone.amount.toLocaleString()}</span>
+                        </div>
+                        <p className="text-gray-600 text-sm mb-2">{milestone.description}</p>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <span>Duration: {milestone.duration}</span>
+                          <span>Deliverables: {milestone.deliverables}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Attachments */}
+              {selectedProposal.attachments && selectedProposal.attachments.length > 0 && (
+                <div>
+                  <h5 className="font-semibold text-dark-900 mb-3">Attachments</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedProposal.attachments.map((attachment, index) => (
+                      <div key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
+                        <FileText className="h-8 w-8 text-primary-600" />
+                        <div className="flex-1">
+                          <h6 className="font-medium text-dark-900 text-sm">{attachment.name}</h6>
+                          <p className="text-xs text-gray-600">{attachment.size}</p>
+                        </div>
+                        <button className="text-primary-600 hover:text-primary-700">
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Professional Portfolio Preview */}
+              <div>
+                <h5 className="font-semibold text-dark-900 mb-3">Professional Portfolio</h5>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {selectedProposal.professional.portfolio_samples?.slice(0, 3).map((sample, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <img
+                        src={sample.image}
+                        alt={sample.title}
+                        className="w-full h-32 object-cover"
+                      />
+                      <div className="p-3">
+                        <h6 className="font-medium text-dark-900 text-sm">{sample.title}</h6>
+                        <p className="text-xs text-gray-600 mt-1">{sample.category}</p>
+                      </div>
+                    </div>
+                  )) || (
+                    <div className="col-span-3 text-center py-8 text-gray-500">
+                      <Briefcase className="h-8 w-8 mx-auto mb-2" />
+                      <p>No portfolio samples available</p>
+                    </div>
+                  )}
+                </div>
+                <button className="mt-3 text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center space-x-1">
+                  <ExternalLink className="h-4 w-4" />
+                  <span>View Full Portfolio</span>
+                </button>
+              </div>
+
+              {/* Action Buttons */}
+              {selectedProposal.status === 'pending' && (
+                <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      handleRejectProposal(selectedProposal.id);
+                      setSelectedProposal(null);
+                    }}
+                    className="px-6 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors duration-200 font-medium"
+                  >
+                    Decline Proposal
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleAcceptProposal(selectedProposal.id);
+                      setSelectedProposal(null);
+                    }}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium flex items-center space-x-2"
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                    <span>Accept Proposal</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Payment Modal */}
       {showPaymentModal && selectedMilestone && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -961,4 +1412,4 @@ export default function ProjectDetailPage() {
       )}
     </div>
   );
-} 
+}
