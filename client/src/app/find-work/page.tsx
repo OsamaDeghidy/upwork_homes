@@ -1,33 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Filter, Star, Clock, Shield, CheckCircle, Heart, DollarSign, Users, Calendar, Map, Grid3x3, Award, TrendingUp } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { Search, MapPin, Filter, Star, Clock, Shield, CheckCircle, Heart, DollarSign, Users, Calendar, Map, Grid3x3, Award, TrendingUp, ChevronDown, X, Loader2, SlidersHorizontal, Briefcase, Eye } from 'lucide-react';
+import { projectsService } from '@/lib/projects';
+import { Project, Category } from '@/lib/types';
 
 export default function FindWorkPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedBudget, setSelectedBudget] = useState('all');
-  const [selectedSkills, setSelectedSkills] = useState('all');
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [selectedSort, setSelectedSort] = useState('recent');
-
-  const categories = [
-    'All Categories',
-    'Kitchen Remodeling',
-    'Bathroom Renovation',
-    'Electrical Work',
-    'Plumbing',
-    'Roofing',
-    'HVAC Services',
-    'Landscaping',
-    'Painting',
-    'Flooring',
-    'Carpentry'
-  ];
+  
+  // Backend data state
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalProjects, setTotalProjects] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const budgetRanges = [
     'All Budgets',
@@ -64,10 +61,58 @@ export default function FindWorkPage() {
     { value: 'rating', label: 'Best Client Rating' }
   ];
 
+  // Load data from backend
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Load categories and projects in parallel
+        const [categoriesData, projectsData] = await Promise.all([
+          projectsService.getCategories(),
+          projectsService.getProjects({
+            page: currentPage,
+            category: selectedCategory !== 'all' ? selectedCategory : undefined,
+            location: selectedLocation || undefined,
+            search: searchQuery || undefined
+          })
+        ]);
+        
+        setCategories(categoriesData);
+        setProjects(projectsData.results);
+        setTotalProjects(projectsData.count);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load projects');
+        toast.error('Failed to load projects');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [currentPage, selectedCategory, selectedLocation, searchQuery]);
+
+  // Load categories on component mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await projectsService.getCategories();
+        setCategories(categoriesData);
+      } catch (err) {
+        console.error('Error loading categories:', err);
+        toast.error('Error loading categories');
+      }
+    };
+    
+    loadCategories();
+  }, []);
+
   const clearAllFilters = () => {
     setSelectedCategory('all');
     setSelectedBudget('all');
-    setSelectedSkills('all');
+    setSelectedSkills([]);
     setSelectedRole('all');
     setSearchQuery('');
     setSelectedLocation('');
@@ -234,24 +279,24 @@ export default function FindWorkPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(0,191,255,0.1),transparent_60%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,206,0,0.08),transparent_60%)]"></div>
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
-          <div className="text-center space-y-8">
-            <div className="space-y-4">
-              <h1 className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl text-dark-900 leading-tight">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-8 sm:pb-12">
+          <div className="text-center space-y-6 sm:space-y-8">
+            <div className="space-y-3 sm:space-y-4">
+              <h1 className="font-heading font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-dark-900 leading-tight">
                 Find Your Next
                 <span className="block text-gradient-primary">Home Project</span>
               </h1>
-              <p className="text-xl lg:text-2xl text-dark-600 leading-relaxed max-w-3xl mx-auto">
+              <p className="text-lg sm:text-xl lg:text-2xl text-dark-600 leading-relaxed max-w-3xl mx-auto px-4">
                 Browse thousands of home improvement projects and connect with homeowners looking for skilled professionals.
               </p>
             </div>
 
             {/* Search Bar */}
             <div className="max-w-4xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-upwork-lg p-6 border border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-upwork-lg p-4 sm:p-6 border border-gray-200">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                   {/* Search Input */}
-                  <div className="md:col-span-2">
+                  <div className="lg:col-span-2">
                     <label className="block text-sm font-medium text-dark-700 mb-2">
                       What service are you offering?
                     </label>
@@ -261,9 +306,9 @@ export default function FindWorkPage() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="e.g., Kitchen remodeling, Plumbing..."
-                        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                       />
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                     </div>
                   </div>
 
@@ -278,16 +323,17 @@ export default function FindWorkPage() {
                         value={selectedLocation}
                         onChange={(e) => setSelectedLocation(e.target.value)}
                         placeholder="Enter city or zip"
-                        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base"
                       />
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                     </div>
                   </div>
 
                   {/* Search Button */}
                   <div className="flex items-end">
-                    <button className="w-full bg-gradient-primary text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:scale-105">
-                      Search Jobs
+                    <button className="w-full bg-gradient-primary text-white px-4 sm:px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base touch-target">
+                      <Search className="h-4 w-4 inline mr-2 lg:hidden" />
+                      Search Projects
                     </button>
                   </div>
                 </div>
@@ -295,18 +341,18 @@ export default function FindWorkPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-6 sm:pt-8">
               {[
                 { value: '2,847', label: 'Active Projects' },
                 { value: '$2.8M+', label: 'Total Value' },
                 { value: '98%', label: 'Success Rate' },
                 { value: '24h', label: 'Avg Response' },
               ].map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-2xl md:text-3xl font-bold text-gradient-primary mb-1">
+                <div key={index} className="text-center p-3 sm:p-4">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient-primary mb-1">
                     {stat.value}
                   </div>
-                  <div className="text-sm text-dark-600 font-medium">{stat.label}</div>
+                  <div className="text-xs sm:text-sm text-dark-600 font-medium">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -315,19 +361,34 @@ export default function FindWorkPage() {
       </section>
 
       {/* Filters and Results */}
-      <section className="py-12">
+      <section className="py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+            {/* Mobile Filter Toggle */}
+            <div className="lg:hidden mb-4">
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors touch-target"
+              >
+                <SlidersHorizontal className="h-5 w-5" />
+                <span className="font-medium">Filters & Sort</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
             {/* Filters Sidebar */}
             <div className="lg:w-80">
-              <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-6 sticky top-24">
+              <div className={`bg-white rounded-2xl shadow-lg border border-gray-200 p-6 lg:sticky lg:top-24 ${showFilters ? 'block' : 'hidden lg:block'}`}>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-heading font-semibold text-lg text-dark-900">Filters</h3>
+                  <h3 className="font-heading font-semibold text-lg text-dark-900 flex items-center gap-2">
+                    <SlidersHorizontal className="h-5 w-5 text-primary-500" />
+                    Filters
+                  </h3>
                   <button 
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="lg:hidden p-2 text-gray-600 hover:text-primary-500 rounded-lg"
+                    onClick={clearAllFilters}
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    <Filter className="h-5 w-5" />
+                    Clear All
                   </button>
                 </div>
 
@@ -340,9 +401,10 @@ export default function FindWorkPage() {
                       onChange={(e) => setSelectedCategory(e.target.value)}
                       className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
-                      {categories.map((category, index) => (
-                        <option key={index} value={category.toLowerCase().replace(/\s+/g, '-')}>
-                          {category}
+                      <option value="all">All Categories</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.slug}>
+                          {category.name}
                         </option>
                       ))}
                     </select>
@@ -368,8 +430,8 @@ export default function FindWorkPage() {
                   <div>
                     <label className="block text-sm font-medium text-dark-700 mb-3">Experience Level</label>
                     <select 
-                      value={selectedSkills}
-                      onChange={(e) => setSelectedSkills(e.target.value)}
+                      value={Array.isArray(selectedSkills) ? selectedSkills[0] || 'all' : selectedSkills}
+                      onChange={(e) => setSelectedSkills(e.target.value === 'all' ? [] : [e.target.value])}
                       className="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       {skillLevels.map((skill, index) => (
@@ -432,15 +494,42 @@ export default function FindWorkPage() {
             </div>
 
             {/* Results */}
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="font-heading font-semibold text-2xl text-dark-900">Available Projects</h2>
-                  <p className="text-dark-600 mt-1">{jobs.length} projects found</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div className="min-w-0">
+                  <h2 className="font-heading font-semibold text-xl sm:text-2xl text-dark-900 flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 sm:h-6 sm:w-6 text-primary-500" />
+                    Available Projects
+                  </h2>
+                  <p className="text-dark-600 mt-1 text-sm sm:text-base">{loading ? 'Loading...' : `${projects.filter(project => {
+                    const matchesSearch = searchQuery === '' || 
+                      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      project.required_skills?.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
+                    
+                    const matchesLocation = !selectedLocation || selectedLocation === '' || 
+                           (selectedLocation && project.location?.toLowerCase().includes(selectedLocation.toLowerCase()));
+                    
+                    const matchesCategory = selectedCategory === 'all' || project.category?.slug === selectedCategory;
+                    
+                    const matchesBudget = selectedBudget === 'all' || (
+                      selectedBudget === 'under-500' && (project.budget_max || project.budget_min || 0) < 500 ||
+                      selectedBudget === '500-1000' && (project.budget_min || 0) >= 500 && (project.budget_max || project.budget_min || 0) <= 1000 ||
+                      selectedBudget === '1000-5000' && (project.budget_min || 0) >= 1000 && (project.budget_max || project.budget_min || 0) <= 5000 ||
+                      selectedBudget === 'over-5000' && (project.budget_min || 0) > 5000
+                    );
+                    
+                    const matchesSkills = selectedSkills.length === 0 || 
+                      selectedSkills.some(skill => project.required_skills?.includes(skill));
+                    
+                    const matchesRole = selectedRole === 'all' || project.required_roles?.includes(selectedRole);
+                    
+                    return matchesSearch && matchesLocation && matchesCategory && matchesBudget && matchesSkills && matchesRole;
+                  }).length} projects found`}</p>
                 </div>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   {/* View Mode Toggle */}
-                  <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                  <div className="hidden sm:flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => setViewMode('list')}
                       className={`p-2 rounded-md transition-all duration-200 ${
@@ -466,7 +555,7 @@ export default function FindWorkPage() {
                   <select 
                     value={selectedSort}
                     onChange={(e) => setSelectedSort(e.target.value)}
-                    className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-w-0 flex-shrink-0"
                   >
                     {sortOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -513,160 +602,214 @@ export default function FindWorkPage() {
                 </div>
               )}
 
+              {/* Loading State */}
+              {loading && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+                  <span className="ml-2 text-dark-600">Loading projects...</span>
+                </div>
+              )}
+
+              {/* Error State */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <p className="text-red-600">{error}</p>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="mt-2 text-red-700 hover:text-red-800 font-medium"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+
               {/* List View */}
-              {viewMode === 'list' && (
+              {viewMode === 'list' && !loading && !error && (
                 <div className="space-y-6">
-                  {jobs.map((job) => (
-                    <div key={job.id} className={`bg-white rounded-2xl shadow-upwork hover:shadow-upwork-lg transition-all duration-300 border overflow-hidden group ${
-                      job.featured ? 'border-primary-200 bg-gradient-to-r from-primary-50/50 to-white' : 'border-gray-200'
-                    }`}>
-                      {job.featured && (
-                        <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-1 text-sm font-medium">
-                          <div className="flex items-center space-x-2">
-                            <Award className="h-4 w-4" />
-                            <span>Featured Project</span>
-                          </div>
-                        </div>
-                      )}
+                  {projects.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-gray-600">No projects found matching your criteria.</p>
+                    </div>
+                  ) : (
+                    projects.filter(project => {
+                      const matchesSearch = searchQuery === '' || 
+                        project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        project.required_skills?.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
                       
-                      <div className="p-6">
-                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <h3 className="font-heading font-semibold text-xl text-dark-900 group-hover:text-primary-600 transition-colors duration-200 mb-2">
-                                  <Link href={`/projects/${job.id}`} className="hover:underline">
-                                    {job.title}
-                                  </Link>
-                                </h3>
-                                
-                                <div className="flex flex-wrap items-center gap-2 mb-3">
-                                  <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    {job.category}
-                                  </span>
-                                  <span className="bg-accent-100 text-accent-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    {job.requiredRole}
-                                  </span>
-                                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    {job.experienceLevel}
-                                  </span>
-                                  {job.urgency === 'ASAP' && (
-                                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-1">
-                                      <TrendingUp className="h-3 w-3" />
-                                      <span>URGENT</span>
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                      const matchesLocation = !selectedLocation || selectedLocation === '' || 
+                           (selectedLocation && project.location?.toLowerCase().includes(selectedLocation.toLowerCase()));
+                      
+                      const matchesCategory = selectedCategory === 'all' || project.category?.slug === selectedCategory;
+                      
+                      const matchesBudget = selectedBudget === 'all' || (
+                        selectedBudget === 'under-500' && (project.budget_max || project.budget_min || 0) < 500 ||
+                        selectedBudget === '500-1000' && (project.budget_min || 0) >= 500 && (project.budget_max || project.budget_min || 0) <= 1000 ||
+                        selectedBudget === '1000-5000' && (project.budget_min || 0) >= 1000 && (project.budget_max || project.budget_min || 0) <= 5000 ||
+                        selectedBudget === 'over-5000' && (project.budget_min || 0) > 5000
+                      );
+                      
+                      const matchesSkills = selectedSkills.length === 0 || 
+                        selectedSkills.some(skill => project.required_skills?.includes(skill));
+                      
+                      const matchesRole = selectedRole === 'all' || project.required_roles?.includes(selectedRole);
+                      
+                      return matchesSearch && matchesLocation && matchesCategory && matchesBudget && matchesSkills && matchesRole;
+                    }).map((project) => (
+                     <div key={project.id} className={`bg-white rounded-2xl shadow-upwork hover:shadow-upwork-lg transition-all duration-300 border overflow-hidden group ${
+                       project.is_featured ? 'border-primary-200 bg-gradient-to-r from-primary-50/50 to-white' : 'border-gray-200'
+                     }`}>
+                       {project.is_featured && (
+                         <div className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-4 py-2 text-sm font-medium">
+                           <div className="flex items-center space-x-2">
+                             <Award className="h-4 w-4" />
+                             <span>Featured Project</span>
+                           </div>
+                         </div>
+                       )}
+                      
+                      <div className="p-4 sm:p-6">
+                        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-4">
+                               <div className="flex-1 min-w-0 pr-4">
+                                 <Link href={`/projects/${project.slug}`} className="block group">
+                                   <h3 className="font-heading font-semibold text-lg sm:text-xl text-dark-900 group-hover:text-primary-600 transition-colors duration-200 mb-3 line-clamp-2">
+                                     {project.title}
+                                   </h3>
+                                 </Link>
+                                 
+                                 <div className="flex flex-wrap items-center gap-2 mb-4">
+                                   <span className="bg-primary-100 text-primary-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium">
+                                     {project.category?.name || 'General'}
+                                   </span>
+                                   {project.required_roles?.length > 0 && (
+                                     <span className="bg-accent-100 text-accent-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium">
+                                       {project.required_roles[0]}
+                                     </span>
+                                   )}
+                                   <span className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium">
+                                     {project.status === 'published' ? 'Open' : project.status}
+                                   </span>
+                                   {project.urgency === 'urgent' && (
+                                     <span className="bg-red-100 text-red-700 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium flex items-center space-x-1">
+                                       <TrendingUp className="h-3 w-3" />
+                                       <span>URGENT</span>
+                                     </span>
+                                   )}
+                                 </div>
+                               </div>
                               
-                              <button className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200">
+                              <button className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200 flex-shrink-0">
                                 <Heart className="h-5 w-5" />
                               </button>
                             </div>
                             
-                            <p className="text-dark-600 leading-relaxed mb-4">
-                              {job.description}
-                            </p>
+                            <p className="text-dark-600 leading-relaxed mb-4 line-clamp-3">
+                               {project.description}
+                             </p>
 
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              {job.tags.map((tag, index) => (
-                                <span key={index} className="bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
+                             {project.required_skills?.length > 0 && (
+                               <div className="mb-4">
+                                 <div className="flex flex-wrap gap-2">
+                                   {project.required_skills.slice(0, 6).map((skill, index) => (
+                                     <span key={index} className="bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs sm:text-sm">
+                                       {skill}
+                                     </span>
+                                   ))}
+                                   {project.required_skills.length > 6 && (
+                                     <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs sm:text-sm">
+                                       +{project.required_skills.length - 6} more
+                                     </span>
+                                   )}
+                                 </div>
+                               </div>
+                             )}
 
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-dark-600 mb-4">
-                              <div className="flex items-center">
-                                <DollarSign className="h-4 w-4 mr-1 text-green-600" />
-                                <span className="font-medium text-green-600">{job.budget}</span>
-                              </div>
-                              <div className="flex items-center">
-                                <MapPin className="h-4 w-4 mr-1" />
-                                <span>{job.location}</span>
-                              </div>
-                              <div className="flex items-center">
-                                <Clock className="h-4 w-4 mr-1" />
-                                <span>{job.postedTime}</span>
-                              </div>
-                              <div className="flex items-center">
-                                <Users className="h-4 w-4 mr-1" />
-                                <span>{job.proposals} proposals</span>
-                              </div>
-                              <div className="flex items-center">
-                                <Calendar className="h-4 w-4 mr-1" />
-                                <span>{job.urgency}</span>
-                              </div>
-                            </div>
-
-                            {/* Required Skills */}
-                            {job.skills.length > 0 && (
-                              <div className="mb-4">
-                                <h4 className="text-sm font-medium text-dark-900 mb-2">Required Skills:</h4>
-                                <div className="flex flex-wrap gap-2">
-                                  {job.skills.map((skill, index) => (
-                                    <span key={index} className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs">
-                                      {skill}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs sm:text-sm text-dark-600 mb-4">
+                               <div className="flex items-center">
+                                 <DollarSign className="h-4 w-4 mr-1 text-green-600 flex-shrink-0" />
+                                 <span className="font-medium text-green-600 truncate">{project.budget_display || `$${project.budget_min || 0} - $${project.budget_max || 0}`}</span>
+                               </div>
+                               <div className="flex items-center">
+                                 <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                                 <span className="truncate">{project.location}</span>
+                               </div>
+                               <div className="flex items-center">
+                                 <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
+                                 <span className="truncate">{new Date(project.created_at).toLocaleDateString()}</span>
+                               </div>
+                               <div className="flex items-center">
+                                 <Users className="h-4 w-4 mr-1 flex-shrink-0" />
+                                 <span className="truncate">{project.proposals_count || 0} proposals</span>
+                               </div>
+                               <div className="flex items-center">
+                                 <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
+                                 <span className="truncate">{project.timeline || project.urgency}</span>
+                               </div>
+                             </div>
                           </div>
 
-                          <div className="lg:w-72">
-                            <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-                              <div className="flex items-center space-x-3">
-                                <img
-                                  src={job.client.avatar}
-                                  alt={job.client.name}
-                                  className="w-12 h-12 rounded-xl object-cover"
-                                />
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="font-semibold text-dark-900">{job.client.name}</span>
-                                    {job.client.verified && (
-                                      <CheckCircle className="h-4 w-4 text-green-500" />
-                                    )}
-                                    {job.client.paymentVerified && (
-                                      <Shield className="h-4 w-4 text-blue-500" />
-                                    )}
-                                  </div>
-                                  <div className="flex items-center space-x-1">
-                                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                    <span className="text-sm text-dark-600">
-                                      {job.client.rating} ({job.client.reviews} reviews)
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center space-x-1 text-sm text-dark-600">
-                                    <MapPin className="h-3 w-3" />
-                                    <span>{job.client.location}</span>
-                                  </div>
-                                </div>
-                              </div>
+                          <div className="xl:w-80 flex-shrink-0">
+                             <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                               <div className="flex items-center space-x-3">
+                                 <img
+                                   src={project.client?.avatar || '/images/default-avatar.png'}
+                                   alt={project.client?.first_name || 'Client'}
+                                   className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                                   onError={(e) => {
+                                     const target = e.target as HTMLImageElement;
+                                     target.src = '/images/default-avatar.png';
+                                   }}
+                                 />
+                                 <div className="flex-1 min-w-0">
+                                   <div className="flex items-center space-x-2 mb-1">
+                                     <span className="font-semibold text-dark-900 truncate">
+                                       {project.client?.first_name} {project.client?.last_name}
+                                     </span>
+                                     {project.client?.is_verified && (
+                                       <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                     )}
+                                     {project.client?.insurance_verified && (
+                                       <Shield className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                                     )}
+                                   </div>
+                                   <div className="flex items-center space-x-1 mb-1">
+                                     <Star className="h-4 w-4 text-yellow-400 fill-current flex-shrink-0" />
+                                     <span className="text-sm text-dark-600 truncate">
+                                       {typeof project.client?.rating_average === 'number' ? project.client.rating_average.toFixed(1) : '0.0'} ({project.client?.rating_count || 0})
+                                     </span>
+                                   </div>
+                                   <div className="flex items-center space-x-1 text-sm text-dark-600">
+                                     <MapPin className="h-3 w-3 flex-shrink-0" />
+                                     <span className="truncate">{project.client?.location || 'Not specified'}</span>
+                                   </div>
+                                 </div>
+                               </div>
                               
                               <div className="text-sm space-y-2">
                                 <div className="flex justify-between items-center">
                                   <span className="text-dark-600">Timeline:</span>
-                                  <span className="font-medium text-dark-900">{job.urgency}</span>
+                                  <span className="font-medium text-dark-900 text-right">{project.timeline || project.urgency || 'Not specified'}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-dark-600">Proposals:</span>
-                                  <span className="font-medium text-dark-900">{job.proposals}</span>
+                                  <span className="font-medium text-dark-900">{project.proposals_count || 0}</span>
                                 </div>
                               </div>
 
-                              <div className="flex space-x-2">
+                              <div className="flex flex-col sm:flex-row xl:flex-col gap-2">
                                 <Link
-                                  href={`/projects/${job.id}`}
-                                  className="flex-1 bg-primary-500 text-white text-center py-2.5 px-4 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200"
+                                  href={`/professional/proposals/create?project=${project.slug}`}
+                                  className="flex-1 bg-primary-500 text-white text-center py-2.5 px-4 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 text-sm"
                                 >
                                   Submit Proposal
                                 </Link>
                                 <Link
-                                  href={`/projects/${job.id}`}
-                                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-dark-700 hover:bg-gray-50 transition-colors duration-200"
+                                  href={`/projects/${project.slug}`}
+                                  className="flex-1 xl:flex-none px-4 py-2.5 border border-gray-300 rounded-lg text-dark-700 hover:bg-gray-50 transition-colors duration-200 text-center text-sm"
                                 >
+                                  <Eye className="h-4 w-4 inline mr-1" />
                                   View Details
                                 </Link>
                               </div>
@@ -675,21 +818,27 @@ export default function FindWorkPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               )}
 
               {/* Pagination - Only for list view */}
-              {viewMode === 'list' && (
+              {viewMode === 'list' && !loading && !error && totalProjects > 0 && (
                 <div className="flex items-center justify-center space-x-2 mt-12">
-                  <button className="px-4 py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200">
+                  <button 
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     Previous
                   </button>
-                  {[1, 2, 3, 4, 5].map((page) => (
+                  {Array.from({ length: Math.min(5, Math.ceil(totalProjects / 10)) }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
+                      onClick={() => setCurrentPage(page)}
                       className={`w-10 h-10 rounded-lg font-medium transition-all duration-200 ${
-                        page === 1
+                        page === currentPage
                           ? 'bg-primary-500 text-white'
                           : 'text-gray-600 hover:bg-primary-50 hover:text-primary-600'
                       }`}
@@ -697,7 +846,11 @@ export default function FindWorkPage() {
                       {page}
                     </button>
                   ))}
-                  <button className="px-4 py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200">
+                  <button 
+                    onClick={() => setCurrentPage(Math.min(Math.ceil(totalProjects / 10), currentPage + 1))}
+                    disabled={currentPage >= Math.ceil(totalProjects / 10)}
+                    className="px-4 py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     Next
                   </button>
                 </div>
@@ -708,4 +861,4 @@ export default function FindWorkPage() {
       </section>
     </div>
   );
-} 
+}

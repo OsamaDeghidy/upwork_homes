@@ -16,7 +16,7 @@ import {
   Heart, 
   Award, 
   TrendingUp, 
-  FileText, 
+  FileText,
   Send,
   Flag,
   Share2,
@@ -29,11 +29,13 @@ import {
 import { projectsService } from '@/lib/projects';
 import { proposalsService, Proposal } from '@/lib/proposals';
 import { Project } from '@/lib/types';
+import { useAuthStore } from '@/lib/store';
 
 export default function ProjectDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const projectSlug = params.id as string;
+  const { user } = useAuthStore();
   
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,12 +44,12 @@ export default function ProjectDetailsPage() {
   const [proposalData, setProposalData] = useState({
     coverLetter: '',
     timeline: '',
-    budget: '',
-    attachments: [] as string[]
+    budget: ''
   });
   const [proposalStatuses, setProposalStatuses] = useState<{[key: string]: string}>({});
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState(false);
+  const [submittingProposal, setSubmittingProposal] = useState(false);
 
 
   // Helper function to extract project ID from slug
@@ -309,11 +311,59 @@ export default function ProjectDetailsPage() {
     router.push(`/messages?freelancer=${freelancerId}`);
   };
 
-  const handleProposalSubmit = (e: React.FormEvent) => {
+  const handleProposalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle proposal submission
-    console.log('Proposal submitted:', proposalData);
-    setShowProposalForm(false);
+    
+    if (!project?.id) {
+      setError('Project ID not found');
+      return;
+    }
+
+    try {
+      setSubmittingProposal(true);
+      setError(null); // Clear any previous errors
+      
+      // Parse budget amount from string (remove $ and commas)
+      const budgetAmount = parseFloat(proposalData.budget.replace(/[$,]/g, ''));
+      
+      if (isNaN(budgetAmount) || budgetAmount <= 0) {
+        alert('Please enter a valid budget amount');
+        return;
+      }
+
+      const proposalPayload = {
+        project: project.id,
+        cover_letter: proposalData.coverLetter,
+        amount: budgetAmount,
+        currency: 'USD',
+        timeline: proposalData.timeline,
+        priority: 'normal' as const,
+        response_time: '24 hours'
+      };
+
+      const newProposal = await proposalsService.createProposal(proposalPayload);
+      
+      // Update proposals list
+      setProposals(prev => [newProposal, ...prev]);
+      
+      // Reset form and close modal
+      setProposalData({
+        coverLetter: '',
+        timeline: '',
+        budget: ''
+      });
+      setShowProposalForm(false);
+      
+      // Show success message (you can add a toast notification here)
+      alert('Proposal submitted successfully!');
+      
+    } catch (err: any) {
+      console.error('Error submitting proposal:', err);
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to submit proposal. Please try again.';
+      alert(errorMessage);
+    } finally {
+      setSubmittingProposal(false);
+    }
   };
 
   return (
@@ -570,7 +620,8 @@ export default function ProjectDetailsPage() {
                                 <span>Message</span>
                               </button>
                               
-                              {currentStatus === 'pending' && (
+                              {/* Only show Accept/Reject buttons if current user is the project owner */}
+                              {user && project.client?.id === user.id && currentStatus === 'pending' && (
                                 <>
                                   <button
                                     onClick={() => handleRejectProposal(proposal.id)}
@@ -780,18 +831,7 @@ export default function ProjectDetailsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-dark-700 mb-2">
-                    Attachments
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                    <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Upload portfolio, certificates, or relevant documents</p>
-                    <button type="button" className="mt-2 text-primary-600 hover:text-primary-700 text-sm font-medium">
-                      Choose Files
-                    </button>
-                  </div>
-                </div>
+
 
                 <div className="flex items-center justify-between pt-6">
                   <button
@@ -803,10 +843,15 @@ export default function ProjectDetailsPage() {
                   </button>
                   <button
                     type="submit"
-                    className="bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 flex items-center space-x-2"
+                    disabled={submittingProposal}
+                    className="bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-colors duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Send className="h-4 w-4" />
-                    <span>Submit Proposal</span>
+                    {submittingProposal ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    <span>{submittingProposal ? 'Submitting...' : 'Submit Proposal'}</span>
                   </button>
                 </div>
               </form>
