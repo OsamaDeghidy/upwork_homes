@@ -1,9 +1,10 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from drf_spectacular.utils import extend_schema
-from .models import PortfolioItem
-from .serializers import PortfolioItemSerializer, PortfolioItemCreateSerializer
+from .models import PortfolioItem, PortfolioImage
+from .serializers import PortfolioItemSerializer, PortfolioItemCreateSerializer, PortfolioImageSerializer
 
 
 class PortfolioListView(generics.ListAPIView):
@@ -55,7 +56,13 @@ class PortfolioCreateView(generics.CreateAPIView):
         tags=["Portfolio"],
     )
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        portfolio_item = serializer.save()
+        
+        # Return the full portfolio item with ID using the detail serializer
+        detail_serializer = PortfolioItemSerializer(portfolio_item)
+        return Response(detail_serializer.data, status=status.HTTP_201_CREATED)
 
 
 class PortfolioUpdateView(generics.UpdateAPIView):
@@ -114,3 +121,69 @@ class MyPortfolioView(generics.ListAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
+
+
+class PortfolioImageCreateView(generics.CreateAPIView):
+    """رفع صورة للمعرض"""
+    serializer_class = PortfolioImageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def perform_create(self, serializer):
+        portfolio_id = self.kwargs.get('portfolio_id')
+        portfolio_item = PortfolioItem.objects.get(
+            id=portfolio_id,
+            professional=self.request.user
+        )
+        serializer.save(portfolio_item=portfolio_item)
+    
+    @extend_schema(
+        operation_id="upload_portfolio_image",
+        summary="Upload Portfolio Image",
+        description="Upload image for portfolio item",
+        tags=["Portfolio"],
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+class PortfolioImageUpdateView(generics.UpdateAPIView):
+    """تحديث صورة المعرض"""
+    serializer_class = PortfolioImageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        portfolio_id = self.kwargs.get('portfolio_id')
+        return PortfolioImage.objects.filter(
+            portfolio_item_id=portfolio_id,
+            portfolio_item__professional=self.request.user
+        )
+    
+    @extend_schema(
+        operation_id="update_portfolio_image",
+        summary="Update Portfolio Image",
+        description="Update portfolio image details",
+        tags=["Portfolio"],
+    )
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
+
+class PortfolioImageDeleteView(generics.DestroyAPIView):
+    """حذف صورة المعرض"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        portfolio_id = self.kwargs.get('portfolio_id')
+        return PortfolioImage.objects.filter(
+            portfolio_item_id=portfolio_id,
+            portfolio_item__professional=self.request.user
+        )
+    
+    @extend_schema(
+        operation_id="delete_portfolio_image",
+        summary="Delete Portfolio Image",
+        description="Delete portfolio image",
+        tags=["Portfolio"],
+    )
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)

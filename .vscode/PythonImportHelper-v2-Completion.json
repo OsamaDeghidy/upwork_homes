@@ -1314,6 +1314,14 @@
         "documentation": {}
     },
     {
+        "label": "status",
+        "importPath": "rest_framework",
+        "description": "rest_framework",
+        "isExtraImport": true,
+        "detail": "rest_framework",
+        "documentation": {}
+    },
+    {
         "label": "serializers",
         "importPath": "rest_framework",
         "description": "rest_framework",
@@ -3745,6 +3753,14 @@
         "documentation": {}
     },
     {
+        "label": "Response",
+        "importPath": "rest_framework.response",
+        "description": "rest_framework.response",
+        "isExtraImport": true,
+        "detail": "rest_framework.response",
+        "documentation": {}
+    },
+    {
         "label": "APIView",
         "importPath": "rest_framework.views",
         "description": "rest_framework.views",
@@ -3906,6 +3922,22 @@
     },
     {
         "label": "Q",
+        "importPath": "django.db.models",
+        "description": "django.db.models",
+        "isExtraImport": true,
+        "detail": "django.db.models",
+        "documentation": {}
+    },
+    {
+        "label": "Sum",
+        "importPath": "django.db.models",
+        "description": "django.db.models",
+        "isExtraImport": true,
+        "detail": "django.db.models",
+        "documentation": {}
+    },
+    {
+        "label": "Count",
         "importPath": "django.db.models",
         "description": "django.db.models",
         "isExtraImport": true,
@@ -7143,7 +7175,7 @@
         "kind": 5,
         "importPath": "server.contracts.urls",
         "description": "server.contracts.urls",
-        "peekOfCode": "app_name = 'contracts'\nurlpatterns = [\n    # Contract management\n    path('', views.ContractListView.as_view(), name='contract_list'),\n    path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),\n    path('create/', views.ContractCreateView.as_view(), name='contract_create'),\n    path('<int:pk>/update/', views.ContractUpdateView.as_view(), name='contract_update'),\n    # Contract actions\n    path('<int:pk>/sign/', views.ContractSignView.as_view(), name='contract_sign'),\n    path('<int:pk>/terminate/', views.ContractTerminateView.as_view(), name='contract_terminate'),",
+        "peekOfCode": "app_name = 'contracts'\nurlpatterns = [\n    # Contract management\n    path('', views.ContractListView.as_view(), name='contract_list'),\n    path('stats/', views.ContractStatsView.as_view(), name='contract_stats'),\n    path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),\n    path('create/', views.ContractCreateView.as_view(), name='contract_create'),\n    path('<int:pk>/update/', views.ContractUpdateView.as_view(), name='contract_update'),\n    # Contract actions\n    path('<int:pk>/sign/', views.ContractSignView.as_view(), name='contract_sign'),",
         "detail": "server.contracts.urls",
         "documentation": {}
     },
@@ -7152,7 +7184,7 @@
         "kind": 5,
         "importPath": "server.contracts.urls",
         "description": "server.contracts.urls",
-        "peekOfCode": "urlpatterns = [\n    # Contract management\n    path('', views.ContractListView.as_view(), name='contract_list'),\n    path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),\n    path('create/', views.ContractCreateView.as_view(), name='contract_create'),\n    path('<int:pk>/update/', views.ContractUpdateView.as_view(), name='contract_update'),\n    # Contract actions\n    path('<int:pk>/sign/', views.ContractSignView.as_view(), name='contract_sign'),\n    path('<int:pk>/terminate/', views.ContractTerminateView.as_view(), name='contract_terminate'),\n    path('<int:pk>/milestones/', views.ContractMilestoneListView.as_view(), name='milestone_list'),",
+        "peekOfCode": "urlpatterns = [\n    # Contract management\n    path('', views.ContractListView.as_view(), name='contract_list'),\n    path('stats/', views.ContractStatsView.as_view(), name='contract_stats'),\n    path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),\n    path('create/', views.ContractCreateView.as_view(), name='contract_create'),\n    path('<int:pk>/update/', views.ContractUpdateView.as_view(), name='contract_update'),\n    # Contract actions\n    path('<int:pk>/sign/', views.ContractSignView.as_view(), name='contract_sign'),\n    path('<int:pk>/terminate/', views.ContractTerminateView.as_view(), name='contract_terminate'),",
         "detail": "server.contracts.urls",
         "documentation": {}
     },
@@ -7188,7 +7220,7 @@
         "kind": 6,
         "importPath": "server.contracts.views",
         "description": "server.contracts.views",
-        "peekOfCode": "class ContractUpdateView(generics.UpdateAPIView):\n    \"\"\"تحديث العقد\"\"\"\n    serializer_class = ContractSerializer\n    permission_classes = [permissions.IsAuthenticated]\n    def get_queryset(self):\n        user = self.request.user\n        return Contract.objects.filter(\n            Q(client=user) | Q(professional=user)\n        )\nclass ContractSignView(APIView):",
+        "peekOfCode": "class ContractUpdateView(generics.UpdateAPIView):\n    \"\"\"تحديث العقد\"\"\"\n    serializer_class = ContractSerializer\n    permission_classes = [permissions.IsAuthenticated]\n    lookup_field = 'pk'\n    def get_queryset(self):\n        user = self.request.user\n        return Contract.objects.filter(\n            Q(client=user) | Q(professional=user)\n        )",
         "detail": "server.contracts.views",
         "documentation": {}
     },
@@ -7297,6 +7329,15 @@
         "importPath": "server.contracts.views",
         "description": "server.contracts.views",
         "peekOfCode": "class ContractCalendarEventListView(generics.ListCreateAPIView):\n    \"\"\"قائمة أحداث تقويم العقد (المواعيد)\"\"\"\n    permission_classes = [permissions.IsAuthenticated]\n    serializer_class = ContractCalendarEventSerializer\n    def get_queryset(self):\n        contract_id = self.kwargs.get('pk')\n        return ContractCalendarEvent.objects.filter(contract_id=contract_id)\n    def list(self, request, *args, **kwargs):\n        queryset = self.get_queryset()\n        serializer = self.get_serializer(queryset, many=True)",
+        "detail": "server.contracts.views",
+        "documentation": {}
+    },
+    {
+        "label": "ContractStatsView",
+        "kind": 6,
+        "importPath": "server.contracts.views",
+        "description": "server.contracts.views",
+        "peekOfCode": "class ContractStatsView(APIView):\n    \"\"\"إحصائيات العقود\"\"\"\n    permission_classes = [permissions.IsAuthenticated]\n    @extend_schema(\n        operation_id=\"get_contract_stats\",\n        summary=\"إحصائيات العقود\",\n        description=\"الحصول على إحصائيات العقود للمستخدم الحالي\",\n        tags=[\"Contracts\"]\n    )\n    def get(self, request):",
         "detail": "server.contracts.views",
         "documentation": {}
     },
@@ -9780,7 +9821,7 @@
         "kind": 6,
         "importPath": "server.portfolio.serializers",
         "description": "server.portfolio.serializers",
-        "peekOfCode": "class PortfolioItemCreateSerializer(serializers.ModelSerializer):\n    class Meta:\n        model = PortfolioItem\n        fields = [\n            'title', 'description', 'category', 'project_duration',\n            'project_cost', 'completion_date', 'featured'\n        ]\n    def create(self, validated_data):\n        validated_data['professional'] = self.context['request'].user\n        return super().create(validated_data)",
+        "peekOfCode": "class PortfolioItemCreateSerializer(serializers.ModelSerializer):\n    project_url = serializers.URLField(required=False, allow_blank=True)\n    technologies = serializers.ListField(\n        child=serializers.CharField(max_length=100),\n        required=False,\n        allow_empty=True\n    )\n    class Meta:\n        model = PortfolioItem\n        fields = [",
         "detail": "server.portfolio.serializers",
         "documentation": {}
     },
@@ -9789,7 +9830,7 @@
         "kind": 5,
         "importPath": "server.portfolio.urls",
         "description": "server.portfolio.urls",
-        "peekOfCode": "app_name = 'portfolio'\nurlpatterns = [\n    # Portfolio\n    path('', views.PortfolioListView.as_view(), name='portfolio_list'),\n    path('<int:pk>/', views.PortfolioDetailView.as_view(), name='portfolio_detail'),\n    path('create/', views.PortfolioCreateView.as_view(), name='portfolio_create'),\n    path('<int:pk>/update/', views.PortfolioUpdateView.as_view(), name='portfolio_update'),\n    path('<int:pk>/delete/', views.PortfolioDeleteView.as_view(), name='portfolio_delete'),\n    # My portfolio\n    path('my/', views.MyPortfolioView.as_view(), name='my_portfolio'),",
+        "peekOfCode": "app_name = 'portfolio'\nurlpatterns = [\n    # Portfolio\n    path('', views.PortfolioListView.as_view(), name='portfolio_list'),\n    path('<int:pk>/', views.PortfolioDetailView.as_view(), name='portfolio_detail'),\n    path('create/', views.PortfolioCreateView.as_view(), name='portfolio_create'),\n    path('<int:pk>/update/', views.PortfolioUpdateView.as_view(), name='portfolio_update'),\n    path('<int:pk>/delete/', views.PortfolioDeleteView.as_view(), name='portfolio_delete'),\n    # Portfolio Images\n    path('<int:portfolio_id>/images/', views.PortfolioImageCreateView.as_view(), name='portfolio_image_create'),",
         "detail": "server.portfolio.urls",
         "documentation": {}
     },
@@ -9798,7 +9839,7 @@
         "kind": 5,
         "importPath": "server.portfolio.urls",
         "description": "server.portfolio.urls",
-        "peekOfCode": "urlpatterns = [\n    # Portfolio\n    path('', views.PortfolioListView.as_view(), name='portfolio_list'),\n    path('<int:pk>/', views.PortfolioDetailView.as_view(), name='portfolio_detail'),\n    path('create/', views.PortfolioCreateView.as_view(), name='portfolio_create'),\n    path('<int:pk>/update/', views.PortfolioUpdateView.as_view(), name='portfolio_update'),\n    path('<int:pk>/delete/', views.PortfolioDeleteView.as_view(), name='portfolio_delete'),\n    # My portfolio\n    path('my/', views.MyPortfolioView.as_view(), name='my_portfolio'),\n]",
+        "peekOfCode": "urlpatterns = [\n    # Portfolio\n    path('', views.PortfolioListView.as_view(), name='portfolio_list'),\n    path('<int:pk>/', views.PortfolioDetailView.as_view(), name='portfolio_detail'),\n    path('create/', views.PortfolioCreateView.as_view(), name='portfolio_create'),\n    path('<int:pk>/update/', views.PortfolioUpdateView.as_view(), name='portfolio_update'),\n    path('<int:pk>/delete/', views.PortfolioDeleteView.as_view(), name='portfolio_delete'),\n    # Portfolio Images\n    path('<int:portfolio_id>/images/', views.PortfolioImageCreateView.as_view(), name='portfolio_image_create'),\n    path('<int:portfolio_id>/images/<int:pk>/', views.PortfolioImageUpdateView.as_view(), name='portfolio_image_update'),",
         "detail": "server.portfolio.urls",
         "documentation": {}
     },
@@ -9853,6 +9894,33 @@
         "importPath": "server.portfolio.views",
         "description": "server.portfolio.views",
         "peekOfCode": "class MyPortfolioView(generics.ListAPIView):\n    \"\"\"معرض أعمالي\"\"\"\n    serializer_class = PortfolioItemSerializer\n    permission_classes = [permissions.IsAuthenticated]\n    def get_queryset(self):\n        return PortfolioItem.objects.filter(\n            professional=self.request.user\n        ).prefetch_related('images')\n    @extend_schema(\n        operation_id=\"get_my_portfolio\",",
+        "detail": "server.portfolio.views",
+        "documentation": {}
+    },
+    {
+        "label": "PortfolioImageCreateView",
+        "kind": 6,
+        "importPath": "server.portfolio.views",
+        "description": "server.portfolio.views",
+        "peekOfCode": "class PortfolioImageCreateView(generics.CreateAPIView):\n    \"\"\"رفع صورة للمعرض\"\"\"\n    serializer_class = PortfolioImageSerializer\n    permission_classes = [permissions.IsAuthenticated]\n    def perform_create(self, serializer):\n        portfolio_id = self.kwargs.get('portfolio_id')\n        portfolio_item = PortfolioItem.objects.get(\n            id=portfolio_id,\n            professional=self.request.user\n        )",
+        "detail": "server.portfolio.views",
+        "documentation": {}
+    },
+    {
+        "label": "PortfolioImageUpdateView",
+        "kind": 6,
+        "importPath": "server.portfolio.views",
+        "description": "server.portfolio.views",
+        "peekOfCode": "class PortfolioImageUpdateView(generics.UpdateAPIView):\n    \"\"\"تحديث صورة المعرض\"\"\"\n    serializer_class = PortfolioImageSerializer\n    permission_classes = [permissions.IsAuthenticated]\n    def get_queryset(self):\n        portfolio_id = self.kwargs.get('portfolio_id')\n        return PortfolioImage.objects.filter(\n            portfolio_item_id=portfolio_id,\n            portfolio_item__professional=self.request.user\n        )",
+        "detail": "server.portfolio.views",
+        "documentation": {}
+    },
+    {
+        "label": "PortfolioImageDeleteView",
+        "kind": 6,
+        "importPath": "server.portfolio.views",
+        "description": "server.portfolio.views",
+        "peekOfCode": "class PortfolioImageDeleteView(generics.DestroyAPIView):\n    \"\"\"حذف صورة المعرض\"\"\"\n    permission_classes = [permissions.IsAuthenticated]\n    def get_queryset(self):\n        portfolio_id = self.kwargs.get('portfolio_id')\n        return PortfolioImage.objects.filter(\n            portfolio_item_id=portfolio_id,\n            portfolio_item__professional=self.request.user\n        )\n    @extend_schema(",
         "detail": "server.portfolio.views",
         "documentation": {}
     },

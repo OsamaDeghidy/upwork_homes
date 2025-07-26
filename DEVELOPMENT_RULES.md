@@ -1,5 +1,133 @@
 # قواعد التطوير - A-List Home Professionals
 
+## قواعد محددة لتجنب الأخطاء الشائعة
+
+### 1. التعامل مع Django RelatedManager
+**المشكلة**: `TypeError: 'RelatedManager' object is not iterable`
+**الحلول الوقائية**:
+- استخدام `prefetch_related()` عند الحاجة لعلاقات متعددة
+- إضافة `source='field.all'` في Serializers للعلاقات
+- تجنب الوصول المباشر للعلاقات بدون prefetch
+
+```python
+# ✅ صحيح
+queryset = Model.objects.prefetch_related('related_field')
+class MySerializer(serializers.ModelSerializer):
+    related_items = RelatedSerializer(many=True, source='related_field.all')
+
+# ❌ خطأ
+queryset = Model.objects.all()  # بدون prefetch
+class MySerializer(serializers.ModelSerializer):
+    related_items = RelatedSerializer(many=True)  # بدون source
+```
+
+### 2. التمرير التلقائي في الواجهات
+**المبادئ**:
+- عدم إجبار المستخدم على التمرير التلقائي
+- إضافة آليات للتحكم في التمرير
+- مراعاة تفاعل المستخدم مع الصفحة
+
+```typescript
+// ✅ صحيح - تمرير ذكي
+const [userScrolledUp, setUserScrolledUp] = useState(false);
+const [autoScroll, setAutoScroll] = useState(true);
+
+useEffect(() => {
+  if (autoScroll && !userScrolledUp && messages.length > 0) {
+    scrollToBottom();
+  }
+}, [messages.length, autoScroll, userScrolledUp]);
+
+// ❌ خطأ - تمرير إجباري
+useEffect(() => {
+  scrollToBottom(); // يحدث دائماً
+}, [messages]);
+```
+
+### 3. إدارة الأخطاء في الواجهة الأمامية
+**المبادئ**:
+- التعامل مع جميع حالات الخطأ المحتملة
+- عرض رسائل خطأ واضحة للمستخدم
+- تسجيل الأخطاء للمطورين
+
+```typescript
+// ✅ صحيح
+try {
+  const response = await api.call();
+  // معالجة النجاح
+} catch (error) {
+  console.error('Error details:', error);
+  if (error.response?.status === 401) {
+    showError('غير مصرح لك بهذا الإجراء');
+  } else if (error.response?.status === 500) {
+    showError('خطأ في الخادم، يرجى المحاولة لاحقاً');
+  } else {
+    showError('حدث خطأ غير متوقع');
+  }
+}
+```
+
+### 4. WebSocket والرسائل الفورية
+**المبادئ**:
+- تجنب الإرسال المكرر للرسائل
+- التعامل مع انقطاع الاتصال
+- تحديث الواجهة بشكل متزامن
+
+```typescript
+// ✅ صحيح
+const setupWebSocket = () => {
+  const ws = new WebSocket(url);
+  
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'new_message') {
+      // تحديث الرسائل بدون تكرار
+      setMessages(prev => {
+        const exists = prev.find(m => m.id === data.message.id);
+        if (exists) return prev;
+        return [...prev, data.message];
+      });
+    }
+  };
+};
+```
+
+### 5. تحسين الأداء
+**المبادئ**:
+- استخدام lazy loading للمكونات الكبيرة
+- تحسين استعلامات قاعدة البيانات
+- استخدام التخزين المؤقت بذكاء
+
+```python
+# ✅ صحيح - استعلام محسن
+queryset = Message.objects.select_related('sender', 'conversation')\
+                         .prefetch_related('attachments', 'reactions')\
+                         .filter(conversation_id=conversation_id)
+
+# ❌ خطأ - استعلامات متعددة
+for message in messages:
+    sender = message.sender  # N+1 query problem
+    attachments = message.attachments.all()  # N+1 query problem
+```
+
+### 6. إدارة الحالة (State Management)
+**المبادئ**:
+- استخدام useState للحالات البسيطة
+- استخدام useReducer للحالات المعقدة
+- تجنب الحالات المكررة
+
+```typescript
+// ✅ صحيح
+const [messages, setMessages] = useState<Message[]>([]);
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState<string | null>(null);
+
+// ❌ خطأ - حالات مكررة
+const [messages, setMessages] = useState<Message[]>([]);
+const [messagesList, setMessagesList] = useState<Message[]>([]);
+const [allMessages, setAllMessages] = useState<Message[]>([]);
+```
+
 ## 🎯 منهجية العمل الأساسية
 
 ### 📋 خطوات العمل لكل صفحة/جزء:
@@ -222,4 +350,4 @@ export const projectService = {
 ### عند وجود خطأ يمنع عمل النظام:
 - يتم حله فوراً حتى لو تطلب تعديل القواعد
 - يتم توثيق الحل في ملفات منفصلة
-- يتم اختبار الحل للتأكد من عدم تكرار الخطأ 
+- يتم اختبار الحل للتأكد من عدم تكرار الخطأ

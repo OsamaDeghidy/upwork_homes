@@ -36,7 +36,8 @@ import {
   ChevronDown,
   ExternalLink,
   MapPin,
-  AlertCircle
+  AlertCircle,
+  FileCheck
 } from 'lucide-react';
 import { proposalsService, Proposal } from '@/lib/proposals';
 import { portfolioService } from '@/lib/portfolio';
@@ -305,14 +306,41 @@ export default function ProjectDetailPage() {
 
   const handleAcceptProposal = async (proposalId: string) => {
     try {
-      await proposalsService.acceptProposal(proposalId);
-      // Refresh proposals
-      const projectId = parseInt(project.id.split('-')[0].replace('project', ''));
-      const response = await proposalsService.getProjectProposals(projectId);
-      setProposals(response.results);
+      const response = await proposalsService.acceptProposal(proposalId);
+      
+      // Update the proposal status locally first
+      setProposals(prevProposals => 
+        prevProposals.map(proposal => 
+          proposal.id === proposalId 
+            ? { 
+                ...proposal, 
+                status: 'accepted' as const,
+                contract_id: response.contract?.id || undefined
+              }
+            : proposal
+        )
+      );
+      
       setShowProposalModal(false);
+      
+      // Check if contract was created
+      if (response.contract && response.contract.id) {
+        // Show success message
+        alert('تم قبول العرض وإنشاء العقد بنجاح!');
+        
+        // Refresh proposals to get server data
+        const projectId = parseInt(project.id.split('-')[0].replace('project', ''));
+        const proposalsResponse = await proposalsService.getProjectProposals(projectId);
+        setProposals(proposalsResponse.results);
+      } else {
+        // Refresh proposals if no contract was created
+        const projectId = parseInt(project.id.split('-')[0].replace('project', ''));
+        const proposalsResponse = await proposalsService.getProjectProposals(projectId);
+        setProposals(proposalsResponse.results);
+      }
     } catch (error) {
       console.error('Failed to accept proposal:', error);
+      alert('حدث خطأ أثناء قبول العرض. يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -329,7 +357,10 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const tabs = [
+  // Check if there's an accepted proposal with a contract
+  const hasContract = proposals.some(proposal => proposal.status === 'accepted' && proposal.contract_id);
+
+  const baseTabs = [
     { id: 'overview', label: 'Overview', icon: FileText },
     { id: 'milestones', label: 'Milestones', icon: CheckCircle },
     { id: 'proposals', label: 'Proposals', icon: Users },
@@ -337,6 +368,15 @@ export default function ProjectDetailPage() {
     { id: 'messages', label: 'Messages', icon: MessageCircle },
     { id: 'documents', label: 'Documents', icon: FileText }
   ];
+
+  // Add contract tab if there's a contract
+  const tabs = hasContract 
+    ? [
+        ...baseTabs.slice(0, 2), // overview, milestones
+        { id: 'contract', label: 'Contract', icon: FileCheck },
+        ...baseTabs.slice(2) // proposals, payments, messages, documents
+      ]
+    : baseTabs;
 
   // Show proposals count in tab if project is accepting proposals
   const showProposalsCount = project.status === 'published' || project.status === 'draft';
@@ -852,9 +892,21 @@ export default function ProjectDetailPage() {
                                 </div>
                               )}
                               {proposal.status === 'accepted' && (
-                                <div className="flex items-center space-x-2 text-green-600">
-                                  <CheckCircle className="h-4 w-4" />
-                                  <span className="text-sm font-medium">Accepted</span>
+                                <div className="flex items-center space-x-3">
+                                  {proposal.contract_id ? (
+                                    <Link
+                                      href={`/client/contracts/${proposal.contract_id}`}
+                                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      <span>View Contract</span>
+                                    </Link>
+                                  ) : (
+                                    <div className="flex items-center space-x-2 text-green-600">
+                                      <CheckCircle className="h-4 w-4" />
+                                      <span className="text-sm font-medium">Accepted</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               {proposal.status === 'rejected' && (
@@ -868,6 +920,125 @@ export default function ProjectDetailPage() {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Contract Tab */}
+                {activeTab === 'contract' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg text-dark-900">Project Contract</h3>
+                    </div>
+
+                    {(() => {
+                      const acceptedProposal = proposals.find(p => p.status === 'accepted' && p.contract_id);
+                      if (!acceptedProposal) {
+                        return (
+                          <div className="text-center py-12">
+                            <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <h4 className="text-lg font-medium text-gray-900 mb-2">No Contract Available</h4>
+                            <p className="text-gray-600">A contract will be created once a proposal is accepted.</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="bg-white border border-gray-200 rounded-xl p-6">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-green-100 p-2 rounded-full">
+                                <FileCheck className="h-6 w-6 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-dark-900">Contract Active</h4>
+                                <p className="text-sm text-gray-600">Contract created from accepted proposal</p>
+                              </div>
+                            </div>
+                            <Link
+                              href={`/client/contracts/${acceptedProposal.contract_id}`}
+                              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              <span>View Full Contract</span>
+                            </Link>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h5 className="font-medium text-dark-900 mb-3">Contract Details</h5>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Professional:</span>
+                                  <span className="font-medium text-dark-900">{acceptedProposal.professional.full_name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Contract Value:</span>
+                                  <span className="font-medium text-dark-900">${acceptedProposal.amount}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Timeline:</span>
+                                  <span className="font-medium text-dark-900">{acceptedProposal.timeline}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Status:</span>
+                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Active</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h5 className="font-medium text-dark-900 mb-3">Professional Info</h5>
+                              <div className="flex items-center space-x-3 mb-3">
+                                <img
+                                  src={acceptedProposal.professional.avatar || '/default-avatar.png'}
+                                  alt={acceptedProposal.professional.full_name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                                <div>
+                                  <p className="font-medium text-dark-900">{acceptedProposal.professional.full_name}</p>
+                                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                    <Star className="h-4 w-4 text-yellow-400" />
+                                    <span>{acceptedProposal.professional.rating_average}/5</span>
+                                    <span>({acceptedProposal.professional.rating_count} reviews)</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="space-y-1 text-sm text-gray-600">
+                                <div className="flex items-center space-x-2">
+                                  <MapPin className="h-4 w-4" />
+                                  <span>{acceptedProposal.professional.location}</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Briefcase className="h-4 w-4" />
+                                  <span>{acceptedProposal.professional.projects_completed} projects completed</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-6 pt-6 border-t border-gray-200">
+                            <h5 className="font-medium text-dark-900 mb-3">Quick Actions</h5>
+                            <div className="flex flex-wrap gap-3">
+                              <Link
+                                href={`/client/contracts/${acceptedProposal.contract_id}`}
+                                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                              >
+                                <FileText className="h-4 w-4" />
+                                <span>View Contract Terms</span>
+                              </Link>
+                              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                                <MessageCircle className="h-4 w-4" />
+                                <span>Message Professional</span>
+                              </button>
+                              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                                <Download className="h-4 w-4" />
+                                <span>Download Contract</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 

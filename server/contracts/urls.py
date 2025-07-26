@@ -6,6 +6,7 @@ app_name = 'contracts'
 urlpatterns = [
     # Contract management
     path('', views.ContractListView.as_view(), name='contract_list'),
+    path('stats/', views.ContractStatsView.as_view(), name='contract_stats'),
     path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),
     path('create/', views.ContractCreateView.as_view(), name='contract_create'),
     path('<int:pk>/update/', views.ContractUpdateView.as_view(), name='contract_update'),
@@ -36,4 +37,4 @@ urlpatterns = [
     
     # Professional contracts
     path('professional/', views.ProfessionalContractListView.as_view(), name='professional_contracts'),
-] 
+]

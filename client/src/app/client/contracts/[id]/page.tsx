@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import { 
+import {
   ArrowLeft,
   FileText,
   Download,
@@ -26,17 +26,108 @@ import {
   File,
   Check,
   Timer,
-  Receipt
+  Receipt,
+  Loader2,
+  AlertTriangle,
+  ChevronDown
 } from 'lucide-react';
+import { contractsService } from '@/lib/contracts';
+import { useAuthStore } from '@/lib/store';
+
+interface ContractDetail {
+  id: number;
+  title: string;
+  description: string;
+  client: number;
+  professional: number;
+  project: number;
+  total_amount: number;
+  paid_amount: number;
+  payment_type: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  terms_and_conditions: string;
+  payment_terms: string;
+  warranty_period: string;
+  contract_number: string;
+  client_signed: boolean;
+  professional_signed: boolean;
+  client_signed_at: string | null;
+  professional_signed_at: string | null;
+  completion_percentage: number;
+  created_at: string;
+  updated_at: string;
+  client_details?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+    avatar?: string;
+    name: string;
+  };
+  professional_details?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+    avatar?: string;
+    name: string;
+  };
+}
 
 export default function ContractDetailPage() {
   const params = useParams();
   const contractId = params.id as string;
-
+  const { user } = useAuthStore();
+  
+  const [contract, setContract] = useState<ContractDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Sample contract data (in real app, this would come from API based on contractId)
-  const contract = {
+  useEffect(() => {
+    const fetchContract = async () => {
+      if (!user || !contractId) return;
+      
+      try {
+        setLoading(true);
+        const contractData = await contractsService.getContract(parseInt(contractId));
+        setContract(contractData);
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Failed to load contract');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContract();
+  }, [user, contractId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+    };
+
+    if (showStatusDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStatusDropdown]);
+
+  // Sample contract data for fallback (will be replaced with real data)
+  const sampleContract = {
     id: contractId,
     contractNumber: 'CON-2024-001',
     title: 'Kitchen Renovation Contract',
@@ -235,6 +326,71 @@ export default function ContractDetailPage() {
     { id: 'amendments', label: 'Amendments', icon: Edit2 }
   ];
 
+  const contractStatuses = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'active', label: 'Active' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'disputed', label: 'Disputed' }
+  ];
+
+  const updateContractStatus = async (newStatus: string) => {
+    if (!contract || updatingStatus) return;
+    
+    setUpdatingStatus(true);
+    try {
+      const updatedContract = await contractsService.updateContract(contract.id, { status: newStatus });
+      
+      // Update contract state with the response from server
+      setContract({ ...contract, ...updatedContract, status: newStatus });
+      
+      // If contract is completed, also update project status if exists
+      if (newStatus === 'completed' && contract.project) {
+        try {
+          // Import projects service and update project status
+          const { projectsService } = await import('../../../../lib/projects');
+          await projectsService.updateProject(contract.project, { status: 'completed' });
+          console.log('Project status updated to completed');
+        } catch (projectError) {
+          console.warn('Failed to update project status:', projectError);
+          // Don't fail the contract update if project update fails
+        }
+      }
+      
+      setShowStatusDropdown(false);
+      
+      // Show success message
+      const statusLabels = {
+        'draft': 'مسودة',
+        'pending': 'في الانتظار',
+        'active': 'نشط',
+        'completed': 'مكتمل',
+        'cancelled': 'ملغي',
+        'disputed': 'متنازع عليه'
+      };
+      
+      alert(`تم تحديث حالة العقد إلى: ${statusLabels[newStatus as keyof typeof statusLabels] || newStatus}`);
+      
+    } catch (error: any) {
+      console.error('Error updating contract status:', error);
+      
+      // Show more detailed error message
+      let errorMessage = 'فشل في تحديث حالة العقد';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Active':
@@ -267,12 +423,64 @@ export default function ContractDetailPage() {
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return `$${amount?.toLocaleString() || '0'}`;
+  };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
 
-  const totalPaid = contract.milestones.filter(m => m.status === 'Paid').reduce((sum, m) => sum + parseFloat(m.amount.replace('$', '').replace(',', '')), 0);
-  const totalPending = contract.milestones.filter(m => m.status === 'Pending' || m.status === 'In Progress').reduce((sum, m) => sum + parseFloat(m.amount.replace('$', '').replace(',', '')), 0);
-  const completedMilestones = contract.milestones.filter(m => m.status === 'Paid').length;
-  const totalMilestones = contract.milestones.length;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+          <span className="text-gray-600">Loading contract...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Contract</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Link
+            href="/client/contracts"
+            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200"
+          >
+            Back to Contracts
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!contract) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Contract Not Found</h2>
+          <p className="text-gray-600 mb-4">The contract you're looking for doesn't exist.</p>
+          <Link
+            href="/client/contracts"
+            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200"
+          >
+            Back to Contracts
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Use real contract data
+  const displayContract = contract;
+  const remainingAmount = contract.total_amount - contract.paid_amount;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -286,21 +494,95 @@ export default function ContractDetailPage() {
               </Link>
               <div>
                 <h1 className="text-xl font-bold text-dark-900">{contract.title}</h1>
-                <p className="text-sm text-gray-600">{contract.contractNumber}</p>
+                <p className="text-sm text-gray-600">Contract #{contract.contract_number}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(contract.status)}`}>
-                {contract.status}
-              </span>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-1 ${getStatusColor(contract.status)} hover:opacity-80 transition-opacity`}
+                  disabled={updatingStatus}
+                >
+                  <span className="capitalize">{contract.status}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                
+                {showStatusDropdown && (
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                    <div className="py-1">
+                      {contractStatuses.map((status) => (
+                        <button
+                          key={status.value}
+                          onClick={() => updateContractStatus(status.value)}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                            contract.status === status.value ? 'bg-gray-50 font-medium' : ''
+                          }`}
+                          disabled={updatingStatus}
+                        >
+                          {status.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center space-x-2">
-                <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                <button 
+                  onClick={() => window.print()}
+                  className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  title="Print Contract"
+                >
                   <Printer className="h-5 w-5" />
                 </button>
-                <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                <button 
+                  onClick={() => {
+                    const contractData = {
+                      title: contract.title,
+                      number: contract.contract_number,
+                      client: user?.name || 'Client',
+                      professional: contract.professional_details?.name || 'Professional',
+                      amount: contract.total_amount,
+                      startDate: contract.start_date,
+                      endDate: contract.end_date,
+                      description: contract.description
+                    };
+                    
+                    const content = `CONTRACT DETAILS\n\nTitle: ${contractData.title}\nContract Number: ${contractData.number}\nClient: ${contractData.client}\nProfessional: ${contractData.professional}\nAmount: $${contractData.amount}\nStart Date: ${contractData.startDate}\nEnd Date: ${contractData.endDate}\n\nDescription:\n${contractData.description}`;
+                    
+                    const blob = new Blob([content], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `contract-${contractData.number}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                  }}
+                  className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  title="Download Contract"
+                >
                   <Download className="h-5 w-5" />
                 </button>
-                <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                <button 
+                  onClick={() => {
+                    const url = window.location.href;
+                    if (navigator.share) {
+                      navigator.share({
+                        title: `Contract: ${contract.title}`,
+                        text: `Check out this contract: ${contract.title}`,
+                        url: url
+                      });
+                    } else {
+                      navigator.clipboard.writeText(url).then(() => {
+                        alert('Contract link copied to clipboard!');
+                      });
+                    }
+                  }}
+                  className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  title="Share Contract"
+                >
                   <Share2 className="h-5 w-5" />
                 </button>
               </div>
@@ -317,19 +599,19 @@ export default function ContractDetailPage() {
             <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-dark-900">${totalPaid.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-dark-900">{formatCurrency(contract.paid_amount)}</div>
                   <p className="text-sm text-gray-600">Total Paid</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">${totalPending.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-orange-600">{formatCurrency(remainingAmount)}</div>
                   <p className="text-sm text-gray-600">Remaining</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{completedMilestones}/{totalMilestones}</div>
-                  <p className="text-sm text-gray-600">Milestones</p>
+                  <div className="text-2xl font-bold text-blue-600">{formatCurrency(contract.total_amount)}</div>
+                  <p className="text-sm text-gray-600">Total Value</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{Math.round((completedMilestones / totalMilestones) * 100)}%</div>
+                  <div className="text-2xl font-bold text-green-600">{contract.completion_percentage || 0}%</div>
                   <p className="text-sm text-gray-600">Complete</p>
                 </div>
               </div>
@@ -366,37 +648,37 @@ export default function ContractDetailPage() {
                         <div className="space-y-4">
                           <div>
                             <label className="text-sm font-medium text-gray-700">Contract Number</label>
-                            <p className="text-gray-900">{contract.contractNumber}</p>
+                            <p className="text-gray-900">{contract.contract_number}</p>
                           </div>
                           <div>
-                            <label className="text-sm font-medium text-gray-700">Project Category</label>
-                            <p className="text-gray-900">{contract.category}</p>
+                            <label className="text-sm font-medium text-gray-700">Payment Type</label>
+                            <p className="text-gray-900 capitalize">{contract.payment_type}</p>
                           </div>
                           <div>
-                            <label className="text-sm font-medium text-gray-700">Location</label>
-                            <p className="text-gray-900">{contract.location}</p>
+                            <label className="text-sm font-medium text-gray-700">Status</label>
+                            <p className="text-gray-900 capitalize">{contract.status}</p>
                           </div>
                           <div>
                             <label className="text-sm font-medium text-gray-700">Contract Value</label>
-                            <p className="text-gray-900 font-semibold">{contract.contractValue}</p>
+                            <p className="text-gray-900 font-semibold">{formatCurrency(contract.total_amount)}</p>
                           </div>
                         </div>
                         <div className="space-y-4">
                           <div>
                             <label className="text-sm font-medium text-gray-700">Start Date</label>
-                            <p className="text-gray-900">{contract.startDate}</p>
+                            <p className="text-gray-900">{formatDate(contract.start_date)}</p>
                           </div>
                           <div>
                             <label className="text-sm font-medium text-gray-700">End Date</label>
-                            <p className="text-gray-900">{contract.endDate}</p>
+                            <p className="text-gray-900">{formatDate(contract.end_date)}</p>
                           </div>
                           <div>
                             <label className="text-sm font-medium text-gray-700">Payment Terms</label>
-                            <p className="text-gray-900">{contract.paymentTerms}</p>
+                            <p className="text-gray-900">{contract.payment_terms}</p>
                           </div>
                           <div>
                             <label className="text-sm font-medium text-gray-700">Warranty</label>
-                            <p className="text-gray-900">{contract.warranty}</p>
+                            <p className="text-gray-900">{contract.warranty_period}</p>
                           </div>
                         </div>
                       </div>
@@ -409,83 +691,20 @@ export default function ContractDetailPage() {
 
                     <div>
                       <h3 className="text-lg font-semibold text-dark-900 mb-4">Terms & Conditions</h3>
-                      <ul className="space-y-2">
-                        {contract.termsAndConditions.map((term, index) => (
-                          <li key={index} className="flex items-start space-x-2">
-                            <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                            <span className="text-gray-700 text-sm">{term}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-gray-700 whitespace-pre-wrap">{contract.terms_and_conditions}</p>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* Milestones Tab */}
                 {activeTab === 'milestones' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-dark-900">Project Milestones</h3>
-                      <div className="text-sm text-gray-600">
-                        {completedMilestones} of {totalMilestones} completed
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      {contract.milestones.map((milestone) => (
-                        <div key={milestone.id} className="border border-gray-200 rounded-xl p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start space-x-4 flex-1">
-                              <div className="flex-shrink-0">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                  milestone.status === 'Paid' ? 'bg-green-100' :
-                                  milestone.status === 'In Progress' ? 'bg-blue-100' : 'bg-gray-100'
-                                }`}>
-                                  {milestone.status === 'Paid' ? (
-                                    <CheckCircle className="h-5 w-5 text-green-600" />
-                                  ) : milestone.status === 'In Progress' ? (
-                                    <Timer className="h-5 w-5 text-blue-600" />
-                                  ) : (
-                                    <Clock className="h-5 w-5 text-gray-600" />
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-3 mb-2">
-                                  <h4 className="font-medium text-dark-900">{milestone.name}</h4>
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getMilestoneStatusColor(milestone.status)}`}>
-                                    {milestone.status}
-                                  </span>
-                                </div>
-                                <p className="text-gray-600 text-sm mb-2">{milestone.description}</p>
-                                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                  <span>Due: {milestone.dueDate}</span>
-                                  {milestone.completedDate && (
-                                    <span>Completed: {milestone.completedDate}</span>
-                                  )}
-                                  {milestone.progress && (
-                                    <span>Progress: {milestone.progress}%</span>
-                                  )}
-                                </div>
-                                {milestone.progress && milestone.status === 'In Progress' && (
-                                  <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                                      style={{ width: `${milestone.progress}%` }}
-                                    ></div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-semibold text-dark-900">{milestone.amount}</div>
-                              {milestone.paymentDate && (
-                                <div className="text-xs text-green-600">Paid on {milestone.paymentDate}</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                  <div className="space-y-6">
+                    <div className="text-center py-8">
+                      <CheckCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Project Milestones</h3>
+                      <p className="text-gray-600">Milestone tracking will be available soon.</p>
                     </div>
                   </div>
                 )}
@@ -494,13 +713,7 @@ export default function ContractDetailPage() {
                 {activeTab === 'payments' && (
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-dark-900">Payment History</h3>
-                      <Link
-                        href="/client/payments"
-                        className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-                      >
-                        View All Payments
-                      </Link>
+                      <h3 className="text-lg font-semibold text-dark-900">Payment Information</h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -511,7 +724,7 @@ export default function ContractDetailPage() {
                           </div>
                           <div>
                             <p className="text-sm text-green-700">Total Paid</p>
-                            <p className="text-xl font-bold text-green-900">${totalPaid.toLocaleString()}</p>
+                            <p className="text-xl font-bold text-green-900">{formatCurrency(contract.paid_amount)}</p>
                           </div>
                         </div>
                       </div>
@@ -523,7 +736,7 @@ export default function ContractDetailPage() {
                           </div>
                           <div>
                             <p className="text-sm text-orange-700">Remaining</p>
-                            <p className="text-xl font-bold text-orange-900">${totalPending.toLocaleString()}</p>
+                            <p className="text-xl font-bold text-orange-900">{formatCurrency(remainingAmount)}</p>
                           </div>
                         </div>
                       </div>
@@ -534,90 +747,32 @@ export default function ContractDetailPage() {
                             <Receipt className="h-5 w-5 text-blue-600" />
                           </div>
                           <div>
-                            <p className="text-sm text-blue-700">Transactions</p>
-                            <p className="text-xl font-bold text-blue-900">{contract.payments.length}</p>
+                            <p className="text-sm text-blue-700">Progress</p>
+                            <p className="text-xl font-bold text-blue-900">{contract.completion_percentage || 0}%</p>
                           </div>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="space-y-4">
-                      {contract.payments.map((payment) => (
-                        <div key={payment.id} className="border border-gray-200 rounded-xl p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div className="bg-green-100 p-2 rounded-full">
-                                <CheckCircle className="h-5 w-5 text-green-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-dark-900">{payment.milestone}</h4>
-                                <p className="text-sm text-gray-600">
-                                  {payment.date} • {payment.method} • Ref: {payment.reference}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-semibold text-green-600">{payment.amount}</div>
-                              <div className="text-xs text-gray-500">{payment.status}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-center py-8">
+                      <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Payment History</h3>
+                      <p className="text-gray-600">Payment tracking will be available soon.</p>
                     </div>
                   </div>
                 )}
 
                 {/* Documents Tab */}
                 {activeTab === 'documents' && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-dark-900">Contract Documents</h3>
-                      <button className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center space-x-2">
-                        <Plus className="h-4 w-4" />
-                        <span>Upload Document</span>
-                      </button>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {contract.documents.map((doc) => (
-                        <div key={doc.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow duration-200">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <FileText className="h-8 w-8 text-primary-600" />
-                            <div className="flex-1">
-                              <h4 className="font-medium text-dark-900">{doc.name}</h4>
-                              <p className="text-sm text-gray-600">{doc.type} • {doc.size}</p>
-                            </div>
-                            {doc.signed && (
-                              <CheckCircle className="h-5 w-5 text-green-600" />
-                            )}
-                          </div>
-                          
-                          {doc.signed && doc.signedBy && (
-                            <div className="mb-3 p-2 bg-green-50 rounded-lg">
-                              <p className="text-xs text-green-700">
-                                Signed on {doc.signedDate} by: {doc.signedBy.join(', ')}
-                              </p>
-                            </div>
-                          )}
-                          
-                          <div className="flex items-center space-x-2">
-                            <button className="flex-1 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors duration-200">
-                              View
-                            </button>
-                            <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                              <Download className="h-4 w-4 text-gray-600" />
-                            </button>
-                            {!doc.signed && (
-                              <button 
-                                onClick={() => {/* Sign modal functionality to be implemented */}}
-                                className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-center py-8">
+                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Document Management</h3>
+                      <p className="text-gray-600">Document upload and management will be available soon.</p>
                     </div>
                   </div>
                 )}
@@ -636,38 +791,11 @@ export default function ContractDetailPage() {
                       </button>
                     </div>
                     
-                    {contract.amendments.length > 0 ? (
-                      <div className="space-y-4">
-                        {contract.amendments.map((amendment) => (
-                          <div key={amendment.id} className="border border-gray-200 rounded-xl p-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <h4 className="font-medium text-dark-900">{amendment.title}</h4>
-                                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                                    {amendment.status}
-                                  </span>
-                                </div>
-                                <p className="text-gray-600 text-sm mb-2">{amendment.description}</p>
-                                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                  <span>Date: {amendment.date}</span>
-                                  <span>Approved by: {amendment.approvedBy}</span>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-semibold text-dark-900">{amendment.amount}</div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Edit2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h4 className="text-lg font-medium text-gray-900 mb-2">No Amendments</h4>
-                        <p className="text-gray-600">No amendments have been made to this contract.</p>
-                      </div>
-                    )}
+                    <div className="text-center py-8">
+                      <Edit2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">No Amendments</h4>
+                      <p className="text-gray-600">No amendments have been made to this contract.</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -680,45 +808,86 @@ export default function ContractDetailPage() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="font-semibold text-lg text-dark-900 mb-4">Professional</h3>
               <div className="flex items-center space-x-3 mb-4">
-                <Image
-                  src={contract.professional.avatar}
-                  alt={contract.professional.name}
-                  width={48}
-                  height={48}
-                  className="rounded-full object-cover"
-                />
+                {(contract.professional_details?.avatar || contract.professional?.avatar) ? (
+                  <Image
+                    src={contract.professional_details?.avatar || contract.professional?.avatar}
+                    alt={(contract.professional_details?.name || contract.professional?.name) || 'Professional'}
+                    width={48}
+                    height={48}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-gray-500 font-medium">
+                      {(contract.professional_details?.name || contract.professional?.name)?.charAt(0) || 'P'}
+                    </span>
+                  </div>
+                )}
                 <div className="flex-1">
-                  <h4 className="font-medium text-dark-900">{contract.professional.name}</h4>
-                  <p className="text-sm text-gray-600">{contract.professional.company}</p>
+                  <h4 className="font-medium text-dark-900">
+                    {contract.professional_details?.name || contract.professional?.name || `Professional ID: ${typeof contract.professional === 'object' ? contract.professional?.id || 'N/A' : contract.professional}`}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {contract.professional_details?.email || contract.professional?.email || 'Contact information not available'}
+                  </p>
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm text-gray-600">{contract.professional.rating} ({contract.professional.reviews} reviews)</span>
+                    <span className="text-sm text-gray-600">
+                      {(contract.professional_details?.rating || contract.professional?.rating) ? `${contract.professional_details?.rating || contract.professional?.rating}/5` : 'Rating not available'}
+                    </span>
                   </div>
                 </div>
               </div>
               
               <div className="space-y-2 text-sm mb-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">License:</span>
-                  <span className="font-medium text-dark-900">{contract.professional.license}</span>
+                  <span className="text-gray-600">Contact:</span>
+                  <span className="font-medium text-dark-900">
+                    {contract.professional_details?.phone || contract.professional?.phone || 'Not provided'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Insurance:</span>
-                  <span className="font-medium text-dark-900">{contract.professional.insurance}</span>
+                  <span className="text-gray-600">Email:</span>
+                  <span className="font-medium text-dark-900">
+                    {contract.professional_details?.email || contract.professional?.email || 'Not provided'}
+                  </span>
                 </div>
               </div>
               
               <div className="space-y-2">
-                <button className="w-full bg-primary-600 text-white py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors duration-200 flex items-center justify-center space-x-2">
+                <Link
+                  href={`/messages?professional=${typeof contract.professional === 'object' ? contract.professional?.id || contract.professional : contract.professional}`}
+                  className="w-full bg-primary-600 text-white py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors duration-200 flex items-center justify-center space-x-2"
+                >
                   <MessageCircle className="h-4 w-4" />
                   <span>Send Message</span>
-                </button>
+                </Link>
                 <div className="grid grid-cols-2 gap-2">
-                  <button className="bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-1">
+                  <button 
+                    onClick={() => {
+                      const phone = contract.professional_details?.phone || contract.professional?.phone;
+                      if (phone) {
+                        window.open(`tel:${phone}`, '_self');
+                      } else {
+                        alert('Phone number not available');
+                      }
+                    }}
+                    className="bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-1"
+                  >
                     <Phone className="h-4 w-4" />
                     <span>Call</span>
                   </button>
-                  <button className="bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-1">
+                  <button 
+                    onClick={() => {
+                      const email = contract.professional_details?.email || contract.professional?.email;
+                      if (email) {
+                        window.open(`mailto:${email}`, '_self');
+                      } else {
+                        alert('Email not available');
+                      }
+                    }}
+                    className="bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-1"
+                  >
                     <Mail className="h-4 w-4" />
                     <span>Email</span>
                   </button>
@@ -730,24 +899,52 @@ export default function ContractDetailPage() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="font-semibold text-lg text-dark-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <Link
-                  href={`/client/projects/${contract.id}`}
+                <button
+                  onClick={() => setActiveTab('milestones')}
                   className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
                 >
                   <Eye className="h-4 w-4" />
-                  <span>View Project</span>
-                </Link>
-                <Link
-                  href={`/client/payments?contract=${contract.id}`}
+                  <span>View Milestones</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('payments')}
                   className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
                 >
                   <CreditCard className="h-4 w-4" />
                   <span>View Payments</span>
-                </Link>
-                <button className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2">
-                  <Download className="h-4 w-4" />
-                  <span>Download Contract</span>
                 </button>
+                <button 
+                   onClick={() => {
+                     // Generate and download contract PDF
+                     const contractData = {
+                       title: contract.title,
+                       number: contract.contract_number,
+                       client: user?.name || 'Client',
+                       professional: contract.professional_details?.name || 'Professional',
+                       amount: contract.total_amount,
+                       startDate: contract.start_date,
+                       endDate: contract.end_date,
+                       description: contract.description
+                     };
+                     
+                     // Create a simple text file for now (can be enhanced to PDF later)
+                     const content = `CONTRACT DETAILS\n\nTitle: ${contractData.title}\nContract Number: ${contractData.number}\nClient: ${contractData.client}\nProfessional: ${contractData.professional}\nAmount: $${contractData.amount}\nStart Date: ${contractData.startDate}\nEnd Date: ${contractData.endDate}\n\nDescription:\n${contractData.description}`;
+                     
+                     const blob = new Blob([content], { type: 'text/plain' });
+                     const url = window.URL.createObjectURL(blob);
+                     const a = document.createElement('a');
+                     a.href = url;
+                     a.download = `contract-${contractData.number}.txt`;
+                     document.body.appendChild(a);
+                     a.click();
+                     document.body.removeChild(a);
+                     window.URL.revokeObjectURL(url);
+                   }}
+                   className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center space-x-2"
+                 >
+                   <Download className="h-4 w-4" />
+                   <span>Download Contract</span>
+                 </button>
               </div>
             </div>
 
@@ -757,15 +954,21 @@ export default function ContractDetailPage() {
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 text-sm">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-gray-600">Signed: {contract.signedDate}</span>
+                  <span className="text-gray-600">
+                    Created: {formatDate(contract.created_at)}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-3 text-sm">
                   <Flag className="h-4 w-4 text-gray-400" />
-                  <span className="text-gray-600">Started: {contract.startDate}</span>
+                  <span className="text-gray-600">
+                    Started: {formatDate(contract.start_date)}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-3 text-sm">
                   <Target className="h-4 w-4 text-gray-400" />
-                  <span className="text-gray-600">Due: {contract.endDate}</span>
+                  <span className="text-gray-600">
+                    Due: {formatDate(contract.end_date)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -774,4 +977,4 @@ export default function ContractDetailPage() {
       </div>
     </div>
   );
-} 
+}

@@ -114,9 +114,8 @@ export function getMainNavRoutes(role: UserRole): RouteItem[] {
       return [
         { name: 'Dashboard', href: '/professional/dashboard', icon: 'BarChart3' },
         { name: 'Find Work', href: '/find-work', icon: 'Search' },
-        { name: 'My Jobs', href: '/my-jobs', icon: 'Briefcase' },
-        { name: 'Calendar', href: '/professional/calendar', icon: 'Calendar' },
-        { name: 'Time Tracker', href: '/professional/time-tracker', icon: 'Timer' },
+        { name: 'Proposals', href: '/professional/proposals', icon: 'Send' },
+        { name: 'Contracts', href: '/professional/contracts', icon: 'FileCheck' },
         { name: 'Messages', href: '/messages', icon: 'MessageCircle' },
       ];
     default:
@@ -162,4 +161,4 @@ const routes = {
   getQuickActionRoutes,
 };
 
-export default routes; 
+export default routes;

@@ -32,6 +32,7 @@ export interface Proposal {
   attachments: ProposalAttachment[];
   views_count: number;
   can_be_accepted: boolean;
+  contract_id?: string;
   created_at: string;
   updated_at: string;
 }

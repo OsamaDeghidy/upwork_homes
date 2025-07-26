@@ -13,7 +13,7 @@ import { RegisterData } from '@/lib/types';
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [accountType, setAccountType] = useState<'client' | 'home_pro' | 'specialist' | 'crew_member'>('client');
+  const [accountType, setAccountType] = useState<'client' | 'professional' | 'home_pro' | 'specialist' | 'crew_member'>('client');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { setUser, setTokens } = useAuthStore();
@@ -45,6 +45,13 @@ export default function RegisterPage() {
     setIsLoading(true);
     
     try {
+      // Determine the actual user type to send to backend
+      let userType = accountType;
+      if (accountType === 'professional') {
+        // If user selected "Professional" but didn't choose a specific type, default to home_pro
+        userType = 'home_pro';
+      }
+      
       const registerData: RegisterData = {
         username: data.email, // Use email as username
         email: data.email,
@@ -52,7 +59,7 @@ export default function RegisterPage() {
         password_confirm: data.password_confirm,
         first_name: data.first_name,
         last_name: data.last_name,
-        user_type: accountType,
+        user_type: userType as 'client' | 'home_pro' | 'specialist' | 'crew_member',
         location: data.location || '',
         company_name: '',
         bio: '',
@@ -224,14 +231,14 @@ export default function RegisterPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setAccountType('home_pro')}
+                onClick={() => setAccountType('professional')}
                 className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                  accountType === 'home_pro'
+                  accountType !== 'client'
                     ? 'border-primary-500 bg-primary-50 text-primary-700'
                     : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <Shield className={`h-8 w-8 mx-auto mb-2 ${accountType === 'home_pro' ? 'text-primary-500' : 'text-gray-400'}`} />
+                <Shield className={`h-8 w-8 mx-auto mb-2 ${accountType !== 'client' ? 'text-primary-500' : 'text-gray-400'}`} />
                 <div className="font-semibold">Professional</div>
                 <div className="text-sm opacity-75">Offering services</div>
               </button>
@@ -572,13 +579,13 @@ export default function RegisterPage() {
         <div className="relative flex flex-col justify-center px-12 text-white">
           <div className="mb-12">
             <h3 className="font-heading font-bold text-4xl mb-6 leading-tight">
-              {accountType === 'professional' 
+              {accountType !== 'client' 
                 ? 'Grow Your Home Services Business'
                 : 'Find the Perfect Professional for Your Home'
               }
             </h3>
             <p className="text-xl text-yellow-100 leading-relaxed">
-              {accountType === 'professional'
+              {accountType !== 'client'
                 ? 'Join our network of trusted professionals and access thousands of quality leads.'
                 : 'Connect with verified professionals who will bring your home vision to life.'
               }
@@ -587,7 +594,7 @@ export default function RegisterPage() {
 
           {/* Benefits */}
           <div className="space-y-8">
-            {accountType === 'professional' ? (
+            {accountType !== 'client' ? (
               <>
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">

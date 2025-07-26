@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Upload, X, Camera, Globe, Calendar, DollarSign } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { portfolioService } from '@/lib/portfolio';
 
 interface PortfolioFormData {
   title: string;
@@ -130,11 +131,35 @@ const CreatePortfolioPage = () => {
     try {
       setIsSubmitting(true);
       
-      // TODO: Implement API call to create portfolio item
-      // const response = await portfolioService.createPortfolioItem(formData, selectedImages);
+      // Create portfolio item
+      const portfolioData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        project_duration: formData.project_duration,
+        project_cost: formData.project_cost.toString(),
+        completion_date: formData.completion_date,
+        project_url: formData.project_url,
+        technologies: formData.technologies,
+        featured: false
+      };
+
+      const portfolioItem = await portfolioService.createPortfolioItem(portfolioData);
+      
+      // Upload images if any
+      if (selectedImages.length > 0) {
+        for (let i = 0; i < selectedImages.length; i++) {
+          const image = selectedImages[i];
+          await portfolioService.uploadPortfolioImage(portfolioItem.id, {
+            image,
+            is_primary: i === 0, // First image is primary
+            order: i
+          });
+        }
+      }
       
       toast.success('Portfolio item created successfully!');
-      router.push('/profile?tab=projects');
+      router.push('/professional/portfolio');
     } catch (error: any) {
       console.error('Error creating portfolio item:', error);
       const errorMessage = error.response?.data?.message || 'Failed to create portfolio item';
@@ -385,7 +410,7 @@ const CreatePortfolioPage = () => {
           {/* Submit Button */}
           <div className="flex justify-end space-x-4">
             <Link
-              href="/profile?tab=projects"
+              href="/professional/portfolio"
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel

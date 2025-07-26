@@ -37,7 +37,7 @@ export const portfolioService = {
     completion_date: string;
     featured?: boolean;
   }): Promise<PortfolioItem> {
-    const response = await api.post('/portfolio/', data);
+    const response = await api.post('/portfolio/create/', data);
     return response.data;
   },
 

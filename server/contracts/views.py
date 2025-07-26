@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from .models import Contract, ContractMilestone, ContractDocument, ContractLocation, ContractCalendarEvent
@@ -57,12 +57,96 @@ class ContractUpdateView(generics.UpdateAPIView):
     """تحديث العقد"""
     serializer_class = ContractSerializer
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'pk'
     
     def get_queryset(self):
         user = self.request.user
         return Contract.objects.filter(
             Q(client=user) | Q(professional=user)
         )
+    
+    def update(self, request, *args, **kwargs):
+        """Override update method with detailed error logging"""
+        try:
+            print(f"\n=== CONTRACT UPDATE DEBUG ===")
+            print(f"Request method: {request.method}")
+            print(f"Request path: {request.path}")
+            print(f"Request data: {request.data}")
+            print(f"Contract ID: {kwargs.get('pk')}")
+            print(f"User: {request.user}")
+            print(f"User authenticated: {request.user.is_authenticated}")
+            print(f"User type: {getattr(request.user, 'user_type', 'N/A')}")
+            
+            # Check if user is authenticated
+            if not request.user.is_authenticated:
+                print("ERROR: User not authenticated")
+                return Response(
+                    {'error': 'Authentication required'}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            # Try to get the object
+            try:
+                instance = self.get_object()
+                print(f"Found contract instance: {instance}")
+                print(f"Contract client: {instance.client}")
+                print(f"Contract professional: {instance.professional}")
+            except Exception as get_obj_error:
+                print(f"ERROR getting object: {str(get_obj_error)}")
+                return Response(
+                    {'error': f'Contract not found: {str(get_obj_error)}'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Check permissions
+            if request.user != instance.client and request.user != instance.professional:
+                print(f"ERROR: User {request.user} not authorized for contract {instance}")
+                return Response(
+                    {'error': 'Not authorized to update this contract'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            
+            if not serializer.is_valid():
+                print(f"Serializer errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            self.perform_update(serializer)
+            print(f"Contract updated successfully")
+            print(f"=== END CONTRACT UPDATE DEBUG ===\n")
+            return Response(serializer.data)
+            
+        except Exception as e:
+            print(f"Contract update error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': f'Update failed: {str(e)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def perform_update(self, serializer):
+        """Custom update logic"""
+        contract = serializer.save()
+        
+        # Update project status when contract status changes to completed
+        if 'status' in serializer.validated_data:
+            new_status = serializer.validated_data['status']
+            if new_status == 'completed' and contract.project:
+                # Update the related project status to completed
+                contract.project.status = 'completed'
+                contract.project.completion_percentage = 100
+                contract.project.save()
+                print(f"Project {contract.project.id} status updated to completed")
+            elif new_status in ['cancelled', 'disputed'] and contract.project:
+                # Update project status based on contract status
+                if new_status == 'cancelled':
+                    contract.project.status = 'cancelled'
+                elif new_status == 'disputed':
+                    contract.project.status = 'paused'
+                contract.project.save()
+                print(f"Project {contract.project.id} status updated to {contract.project.status}")
 
 
 class ContractSignView(APIView):
@@ -342,6 +426,56 @@ class ContractCalendarEventListView(generics.ListCreateAPIView):
                 {'error': 'Contract not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class ContractStatsView(APIView):
+    """إحصائيات العقود"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @extend_schema(
+        operation_id="get_contract_stats",
+        summary="إحصائيات العقود",
+        description="الحصول على إحصائيات العقود للمستخدم الحالي",
+        tags=["Contracts"]
+    )
+    def get(self, request):
+        user = request.user
+        
+        # Get user's contracts (both as client and professional)
+        user_contracts = Contract.objects.filter(
+            Q(client=user) | Q(professional=user)
+        )
+        
+        # Calculate statistics
+        total_contracts = user_contracts.count()
+        active_contracts = user_contracts.filter(status='active').count()
+        completed_contracts = user_contracts.filter(status='completed').count()
+        
+        # Calculate financial statistics
+        total_value = user_contracts.aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0
+        
+        paid_amount = user_contracts.aggregate(
+            paid=Sum('paid_amount')
+        )['paid'] or 0
+        
+        pending_amount = total_value - paid_amount
+        
+        # Calculate completion rate
+        completion_rate = 0
+        if total_contracts > 0:
+            completion_rate = (completed_contracts / total_contracts) * 100
+        
+        return Response({
+            'total_contracts': total_contracts,
+            'active_contracts': active_contracts,
+            'completed_contracts': completed_contracts,
+            'total_value': float(total_value),
+            'paid_amount': float(paid_amount),
+            'pending_amount': float(pending_amount),
+            'completion_rate': round(completion_rate, 2)
+        })
 
 
 class ContractTerminateView(APIView):

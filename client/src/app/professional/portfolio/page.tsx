@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { toast } from 'react-hot-toast';
+import { portfolioService } from '@/lib/portfolio';
+import { PortfolioItem } from '@/lib/types';
 import { 
   Camera, 
   Plus, 
@@ -19,7 +22,8 @@ import {
   MapPin,
   DollarSign,
   Award,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
 
 export default function PortfolioPage() {
@@ -27,124 +31,66 @@ export default function PortfolioPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSort, setSelectedSort] = useState('recent');
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
 
-  const portfolioItems = [
-    {
-      id: 1,
-      title: 'Modern Kitchen Transformation',
-      category: 'Kitchen Remodeling',
-      description: 'Complete kitchen renovation with custom cabinets, quartz countertops, and stainless steel appliances',
-      images: [
-        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1556909045-f18c06d3e1d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-      ],
-      videos: ['kitchen_timelapse.mp4'],
-      location: 'Beverly Hills, CA',
-      duration: '6 weeks',
-      budget: '$45,000',
-      client: 'John & Sarah Smith',
-      completionDate: '2024-01-15',
-      rating: 5.0,
-      review: 'Absolutely amazing work! The kitchen exceeded our expectations.',
-      likes: 24,
-      views: 156,
-      featured: true,
-      tags: ['Modern', 'Quartz', 'Custom Cabinets', 'Stainless Steel'],
-      beforeAfter: true
-    },
-    {
-      id: 2,
-      title: 'Luxury Bathroom Renovation',
-      category: 'Bathroom Renovation',
-      description: 'Master bathroom renovation with marble tiles, rainfall shower, and custom vanity',
-      images: [
-        'https://images.unsplash.com/photo-1620626011761-996317b8d101?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-      ],
-      videos: [],
-      location: 'Manhattan Beach, CA',
-      duration: '4 weeks',
-      budget: '$28,000',
-      client: 'Michael Johnson',
-      completionDate: '2023-12-20',
-      rating: 4.8,
-      review: 'Professional work and attention to detail. Highly recommend!',
-      likes: 18,
-      views: 98,
-      featured: false,
-      tags: ['Marble', 'Rainfall Shower', 'Custom Vanity', 'Luxury'],
-      beforeAfter: true
-    },
-    {
-      id: 3,
-      title: 'Outdoor Deck Construction',
-      category: 'Carpentry',
-      description: 'Custom wooden deck with built-in seating and fire pit area',
-      images: [
-        'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1600585152915-d208bec867a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-      ],
-      videos: [],
-      location: 'Santa Monica, CA',
-      duration: '3 weeks',
-      budget: '$15,000',
-      client: 'Emma Wilson',
-      completionDate: '2023-11-10',
-      rating: 4.9,
-      review: 'Beautiful deck that transformed our backyard. Great craftsmanship!',
-      likes: 15,
-      views: 87,
-      featured: true,
-      tags: ['Wooden Deck', 'Fire Pit', 'Built-in Seating', 'Outdoor'],
-      beforeAfter: false
-    },
-    {
-      id: 4,
-      title: 'Electrical Panel Upgrade',
-      category: 'Electrical Work',
-      description: 'Complete electrical panel upgrade from 100A to 200A service with new circuits',
-      images: [
-        'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-      ],
-      videos: [],
-      location: 'Los Angeles, CA',
-      duration: '2 days',
-      budget: '$3,500',
-      client: 'Robert Davis',
-      completionDate: '2023-10-25',
-      rating: 5.0,
-      review: 'Fast, professional, and clean work. Power issues resolved!',
-      likes: 8,
-      views: 45,
-      featured: false,
-      tags: ['Electrical Panel', 'Safety', 'Code Compliance', 'Upgrade'],
-      beforeAfter: false
-    },
-    {
-      id: 5,
-      title: 'Garden Landscaping Project',
-      category: 'Landscaping',
-      description: 'Complete backyard transformation with drought-resistant plants and modern hardscape',
-      images: [
-        'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-      ],
-      videos: [],
-      location: 'Pasadena, CA',
-      duration: '5 weeks',
-      budget: '$22,000',
-      client: 'Lisa Chen',
-      completionDate: '2023-09-15',
-      rating: 4.7,
-      review: 'Love the new garden! Low maintenance and beautiful design.',
-      likes: 12,
-      views: 73,
-      featured: false,
-      tags: ['Drought Resistant', 'Hardscape', 'Modern', 'Sustainable'],
-      beforeAfter: true
+  // Load portfolio data
+  useEffect(() => {
+    loadPortfolioData();
+    loadCategories();
+  }, []);
+
+  const loadPortfolioData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await portfolioService.getUserPortfolio({ page_size: 50 });
+      setPortfolioItems(response.results);
+    } catch (err) {
+      console.error('Error loading portfolio:', err);
+      setError('فشل في تحميل بيانات المعرض');
+      toast.error('فشل في تحميل بيانات المعرض');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const loadCategories = async () => {
+    try {
+      const categoriesData = await portfolioService.getCategories();
+      if (Array.isArray(categoriesData)) {
+        setCategories(['All Categories', ...categoriesData]);
+      } else {
+        throw new Error('Invalid categories data');
+      }
+    } catch (err) {
+      console.error('Error loading categories:', err);
+      // Use default categories if API fails
+      setCategories([
+        'All Categories',
+        'Kitchen Remodeling',
+        'Bathroom Renovation',
+        'Carpentry',
+        'Electrical Work',
+        'Landscaping'
+      ]);
+    }
+  };
+
+  const handleDeleteItem = async (id: number) => {
+    if (!confirm('هل أنت متأكد من حذف هذا العنصر؟')) return;
+    
+    try {
+      await portfolioService.deletePortfolioItem(id);
+      setPortfolioItems(prev => prev.filter(item => item.id !== id));
+      toast.success('تم حذف العنصر بنجاح');
+    } catch (err) {
+      console.error('Error deleting portfolio item:', err);
+      toast.error('فشل في حذف العنصر');
+    }
+  };
 
   const stats = [
     {
@@ -157,7 +103,7 @@ export default function PortfolioPage() {
     },
     {
       label: 'Total Views',
-      value: portfolioItems.reduce((sum, item) => sum + item.views, 0).toString(),
+      value: portfolioItems.reduce((sum, item) => sum + (item.views || 0), 0).toString(),
       change: '+45 this week',
       icon: Eye,
       color: 'text-green-600',
@@ -165,7 +111,7 @@ export default function PortfolioPage() {
     },
     {
       label: 'Total Likes',
-      value: portfolioItems.reduce((sum, item) => sum + item.likes, 0).toString(),
+      value: portfolioItems.reduce((sum, item) => sum + (item.likes || 0), 0).toString(),
       change: '+8 this week',
       icon: Heart,
       color: 'text-red-600',
@@ -173,7 +119,7 @@ export default function PortfolioPage() {
     },
     {
       label: 'Average Rating',
-      value: (portfolioItems.reduce((sum, item) => sum + item.rating, 0) / portfolioItems.length).toFixed(1),
+      value: portfolioItems.length > 0 ? (portfolioItems.reduce((sum, item) => sum + (item.rating || 0), 0) / portfolioItems.length).toFixed(1) : '0.0',
       change: 'Excellent work!',
       icon: Star,
       color: 'text-yellow-600',
@@ -181,14 +127,7 @@ export default function PortfolioPage() {
     }
   ];
 
-  const categories = [
-    'All Categories',
-    'Kitchen Remodeling',
-    'Bathroom Renovation',
-    'Carpentry',
-    'Electrical Work',
-    'Landscaping'
-  ];
+
 
   const sortOptions = [
     { value: 'recent', label: 'Most Recent' },
@@ -200,7 +139,7 @@ export default function PortfolioPage() {
   const filteredItems = portfolioItems.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (item.technologies && item.technologies.some(tech => tech.toLowerCase().includes(searchQuery.toLowerCase())));
     
     const matchesCategory = selectedCategory === 'all' || 
                            item.category.toLowerCase() === selectedCategory.toLowerCase() ||
@@ -212,13 +151,15 @@ export default function PortfolioPage() {
   const sortedItems = [...filteredItems].sort((a, b) => {
     switch (selectedSort) {
       case 'popular':
-        return b.views - a.views;
+        return (b.views || 0) - (a.views || 0);
       case 'rating':
-        return b.rating - a.rating;
+        return (b.rating || 0) - (a.rating || 0);
       case 'budget':
-        return parseInt(b.budget.replace(/[$,]/g, '')) - parseInt(a.budget.replace(/[$,]/g, ''));
+        const budgetA = parseInt((a.budget || '0').replace(/[$,]/g, ''));
+        const budgetB = parseInt((b.budget || '0').replace(/[$,]/g, ''));
+        return budgetB - budgetA;
       default:
-        return new Date(b.completionDate).getTime() - new Date(a.completionDate).getTime();
+        return new Date(b.completion_date || b.created_at).getTime() - new Date(a.completion_date || a.created_at).getTime();
     }
   });
 
@@ -294,11 +235,13 @@ export default function PortfolioPage() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
             >
-              {categories.map(category => (
-                <option key={category} value={category}>
+              {categories && categories.length > 0 ? categories.map((category) => (
+                <option key={category} value={category === 'All Categories' ? 'all' : category}>
                   {category}
                 </option>
-              ))}
+              )) : (
+                <option value="all">All Categories</option>
+              )}
             </select>
 
             {/* Sort */}
@@ -347,8 +290,29 @@ export default function PortfolioPage() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+            <span className="ml-2 text-gray-600">جاري تحميل المعرض...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <div className="text-red-600 mb-4">{error}</div>
+            <button 
+              onClick={loadPortfolioData}
+              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         {/* Portfolio Items */}
-        {viewMode === 'grid' ? (
+        {!loading && !error && viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedItems.map((item) => (
               <div
@@ -358,9 +322,12 @@ export default function PortfolioPage() {
                 {/* Image Gallery */}
                 <div className="relative h-48 bg-gray-200">
                   <img
-                    src={item.images[0]}
+                    src={item.images && item.images.length > 0 ? (item.images[0].image || item.images[0]) : '/placeholder-project.jpg'}
                     alt={item.title}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder-project.jpg';
+                    }}
                   />
                   {item.featured && (
                     <div className="absolute top-4 left-4">
@@ -407,19 +374,19 @@ export default function PortfolioPage() {
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{item.location}</span>
+                      <span className="text-sm text-gray-600">{item.location || 'غير محدد'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{item.duration}</span>
+                      <span className="text-sm text-gray-600">{item.project_duration || 'غير محدد'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <DollarSign className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{item.budget}</span>
+                      <span className="text-sm text-gray-600">{item.project_cost || 'غير محدد'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Star className="h-4 w-4 text-yellow-400" />
-                      <span className="text-sm text-gray-600">{item.rating}</span>
+                      <span className="text-sm text-gray-600">{item.rating || 0}</span>
                     </div>
                   </div>
 
@@ -427,14 +394,14 @@ export default function PortfolioPage() {
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-1">
                         <Eye className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">{item.views}</span>
+                        <span className="text-sm text-gray-600">{item.views || 0}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Heart className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">{item.likes}</span>
+                        <span className="text-sm text-gray-600">{item.likes || 0}</span>
                       </div>
                     </div>
-                    <span className="text-sm text-gray-500">{item.completionDate}</span>
+                    <span className="text-sm text-gray-500">{item.completion_date ? new Date(item.completion_date).toLocaleDateString() : 'غير محدد'}</span>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -457,6 +424,12 @@ export default function PortfolioPage() {
                       >
                         View
                       </Link>
+                      <button 
+                        className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                       <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200">
                         <Edit2 className="h-4 w-4" />
                       </button>
@@ -466,7 +439,7 @@ export default function PortfolioPage() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : !loading && !error ? (
           <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 overflow-hidden">
             <div className="divide-y divide-gray-200">
               {sortedItems.map((item) => (
@@ -477,9 +450,12 @@ export default function PortfolioPage() {
                   <div className="flex items-start space-x-6">
                     <div className="relative w-32 h-24 bg-gray-200 rounded-lg overflow-hidden">
                       <img
-                        src={item.images[0]}
+                        src={item.images && item.images.length > 0 ? (item.images[0].image || item.images[0]) : '/placeholder-project.jpg'}
                         alt={item.title}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '/placeholder-project.jpg';
+                        }}
                       />
                       {item.featured && (
                         <div className="absolute top-1 left-1">
@@ -502,32 +478,32 @@ export default function PortfolioPage() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{item.location}</span>
+                          <span className="text-sm text-gray-600">{item.location || 'غير محدد'}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{item.duration}</span>
+                          <span className="text-sm text-gray-600">{item.project_duration || 'غير محدد'}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <DollarSign className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-600">{item.budget}</span>
+                          <span className="text-sm text-gray-600">{item.project_cost || 'غير محدد'}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Star className="h-4 w-4 text-yellow-400" />
-                          <span className="text-sm text-gray-600">{item.rating}</span>
+                          <span className="text-sm text-gray-600">{item.rating || 0}</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-1">
                             <Eye className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">{item.views}</span>
+                            <span className="text-sm text-gray-600">{item.views || 0}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Heart className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">{item.likes}</span>
+                            <span className="text-sm text-gray-600">{item.likes || 0}</span>
                           </div>
-                          <span className="text-sm text-gray-500">{item.completionDate}</span>
+                          <span className="text-sm text-gray-500">{item.completion_date ? new Date(item.completion_date).toLocaleDateString() : 'غير محدد'}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Link
@@ -539,7 +515,10 @@ export default function PortfolioPage() {
                           <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200">
                             <Edit2 className="h-4 w-4" />
                           </button>
-                          <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200">
+                          <button 
+                            className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
+                            onClick={() => handleDeleteItem(item.id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -550,27 +529,27 @@ export default function PortfolioPage() {
               ))}
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* No Items Found */}
-        {sortedItems.length === 0 && (
+        {!loading && !error && sortedItems.length === 0 && (
           <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-12 text-center">
             <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="font-heading font-semibold text-xl text-dark-900 mb-2">
-              No projects found
+              لا توجد مشاريع
             </h3>
             <p className="text-gray-600 mb-6">
-              Try adjusting your filters or search query, or add your first project to get started.
+              جرب تعديل المرشحات أو البحث، أو أضف مشروعك الأول للبدء.
             </p>
             <Link
               href="/professional/portfolio/new"
               className="bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors duration-200"
             >
-              Add Your First Project
+              أضف مشروعك الأول
             </Link>
           </div>
         )}
       </div>
     </div>
   );
-} 
+}

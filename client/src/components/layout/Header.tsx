@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Menu, X, Bell, User, Briefcase, Users, MessageCircle, Settings, Plus, Search, BarChart3, DollarSign, Heart, FileText, Home, Info, Phone, HelpCircle, Calendar, Clock, CheckSquare, Timer, ChevronDown, LogOut, Crown } from 'lucide-react';
+import { Menu, X, Bell, User, Briefcase, Users, MessageCircle, Settings, Plus, Search, BarChart3, DollarSign, Heart, FileText, Home, Info, Phone, HelpCircle, Calendar, Clock, CheckSquare, Timer, ChevronDown, LogOut, Crown, FileCheck, Send, Star, Eye } from 'lucide-react';
 import { getMainNavRoutes, type UserRole } from '@/lib/routes';
 import { useAuthStore } from '@/lib/store';
 import { authService } from '@/lib/auth';
@@ -76,7 +76,10 @@ export default function Header() {
     'User': User,
     'Settings': Settings,
     'Heart': Heart,
-    'FileText': FileText
+    'FileText': FileText,
+    'Send': Send,
+    'Star': Star,
+    'Eye': Eye
   };
 
   const navigation = navigationRoutes.map(route => ({
@@ -229,28 +232,48 @@ export default function Header() {
                     </Link>
                     
                     <Link
-                      href="/dashboard"
-                      className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
-                    >
-                      <BarChart3 className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
-                      Dashboard
-                    </Link>
-                    
-                    <Link
-                      href="/messages"
-                      className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
-                      Messages
-                    </Link>
-                    
-                    <Link
                       href="/settings"
                       className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
                     >
                       <Settings className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
                       Settings
                     </Link>
+                    
+                    {userRole !== 'client' && (
+                      <>
+                        <Link
+                          href="/professional/calendar"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <Calendar className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Calendar
+                        </Link>
+                        
+                        <Link
+                          href="/professional/availability"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <Clock className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Availability
+                        </Link>
+                        
+                        <Link
+                          href="/professional/earnings"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <DollarSign className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Earnings
+                        </Link>
+                        
+                        <Link
+                          href="/professional/reviews"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <Star className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Reviews
+                        </Link>
+                      </>
+                    )}
                     
                     <div className="border-t border-gray-100 mt-2 pt-2">
                       <button

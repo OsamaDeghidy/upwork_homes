@@ -135,4 +135,10 @@ export const projectsService = {
     });
     return response.data;
   },
+
+  // Update project
+  async updateProject(projectId: number, data: Partial<ProjectCreateData & { status?: string }>): Promise<Project> {
+    const response = await api.put(`/projects/${projectId}/update/`, data);
+    return response.data;
+  },
 };
