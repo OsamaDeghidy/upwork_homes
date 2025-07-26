@@ -754,12 +754,12 @@ export default function FindWorkPage() {
                              <div className="bg-gray-50 rounded-xl p-4 space-y-4">
                                <div className="flex items-center space-x-3">
                                  <img
-                                   src={project.client?.avatar || '/images/default-avatar.png'}
+                                   src={project.client?.avatar || '/default-avatar.svg'}
                                    alt={project.client?.first_name || 'Client'}
                                    className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
                                    onError={(e) => {
                                      const target = e.target as HTMLImageElement;
-                                     target.src = '/images/default-avatar.png';
+                                     target.src = '/default-avatar.svg';
                                    }}
                                  />
                                  <div className="flex-1 min-w-0">

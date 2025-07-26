@@ -450,7 +450,7 @@ export default function ClientProjectsPage() {
                       <div className="flex items-center space-x-3">
                         <div className="relative">
                           <Image
-                            src={project.assigned_professional.avatar || '/default-avatar.png'}
+                            src={project.assigned_professional.avatar || '/default-avatar.svg'}
                             alt={project.assigned_professional.first_name + ' ' + project.assigned_professional.last_name}
                             width={40}
                             height={40}

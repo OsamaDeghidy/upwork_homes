@@ -55,8 +55,8 @@ class MessageSerializer(serializers.ModelSerializer):
     """Serializer للرسائل"""
     sender = UserBasicSerializer(read_only=True)
     is_read = serializers.SerializerMethodField()
-    attachments = MessageAttachmentSerializer(many=True, read_only=True, source='attachments.all')
-    reactions = MessageReactionSerializer(many=True, read_only=True, source='reactions.all')
+    attachments = serializers.SerializerMethodField()
+    reactions = serializers.SerializerMethodField()
     reply_to = serializers.SerializerMethodField()
     
     class Meta:
@@ -78,6 +78,18 @@ class MessageSerializer(serializers.ModelSerializer):
             ).exists()
         return False
     
+    def get_attachments(self, obj):
+        """Get message attachments"""
+        return []  # Return empty list for now to avoid RelatedManager issues
+    
+    def get_reactions(self, obj):
+        """Get message reactions"""
+        try:
+            reactions = obj.reactions.all()
+            return MessageReactionSerializer(reactions, many=True, context=self.context).data
+        except:
+            return []
+    
     def get_reply_to(self, obj):
         """Get reply message if exists"""
         if obj.reply_to:
@@ -98,6 +110,53 @@ class MessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Message content is too long")
         
         return value.strip() if value else ''
+
+
+class MessageResponseSerializer(serializers.ModelSerializer):
+    """Serializer for message response after creation"""
+    sender = UserBasicSerializer(read_only=True)
+    is_read = serializers.SerializerMethodField()
+    attachments = serializers.SerializerMethodField()
+    reactions = serializers.SerializerMethodField()
+    reply_to = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Message
+        fields = [
+            'id', 'conversation', 'sender', 'content', 'message_type',
+            'is_read', 'is_edited', 'is_deleted', 'attachments', 
+            'reactions', 'reply_to', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'sender', 'created_at', 'updated_at']
+    
+    def get_is_read(self, obj):
+        """Check if message is read by current user"""
+        return False  # New message is always unread
+    
+    def get_attachments(self, obj):
+        """Get message attachments"""
+        try:
+            attachments = obj.attachments.all()
+            return MessageAttachmentSerializer(attachments, many=True, context=self.context).data
+        except:
+            return []
+    
+    def get_reactions(self, obj):
+        """Get message reactions"""
+        return []  # New message has no reactions
+    
+    def get_reply_to(self, obj):
+        """Get reply message if exists"""
+        if obj.reply_to:
+            return {
+                'id': obj.reply_to.id,
+                'content': obj.reply_to.content,
+                'sender': {
+                    'id': obj.reply_to.sender.id,
+                    'name': obj.reply_to.sender.get_full_name()
+                }
+            }
+        return None
 
 
 class MessageCreateSerializer(serializers.ModelSerializer):

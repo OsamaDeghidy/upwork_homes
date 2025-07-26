@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -60,6 +60,7 @@ interface Milestone {
 
 export default function ProjectDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.id as string;
   
   const [activeTab, setActiveTab] = useState('overview');
@@ -355,6 +356,11 @@ export default function ProjectDetailPage() {
     } catch (error) {
       console.error('Failed to reject proposal:', error);
     }
+  };
+
+  const handleMessageFreelancer = (freelancerId: number) => {
+    // Navigate to messages page with the freelancer and project
+    router.push(`/messages?freelancer=${freelancerId}&project=${project.id}`);
   };
 
   // Check if there's an accepted proposal with a contract
@@ -819,7 +825,7 @@ export default function ProjectDetailPage() {
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-start space-x-4">
                                 <img
-                                  src={proposal.professional.avatar || '/default-avatar.png'}
+                                  src={proposal.professional.avatar || '/default-avatar.svg'}
                                   alt={proposal.professional.name}
                                   className="w-12 h-12 rounded-full object-cover"
                                 />
@@ -872,6 +878,13 @@ export default function ProjectDetailPage() {
                                 <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 text-sm font-medium">
                                   <ExternalLink className="h-4 w-4" />
                                   <span>View Profile</span>
+                                </button>
+                                <button
+                                  onClick={() => handleMessageFreelancer(proposal.professional.id)}
+                                  className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                  <span>Message</span>
                                 </button>
                               </div>
                               {proposal.status === 'pending' && (
@@ -990,7 +1003,7 @@ export default function ProjectDetailPage() {
                               <h5 className="font-medium text-dark-900 mb-3">Professional Info</h5>
                               <div className="flex items-center space-x-3 mb-3">
                                 <img
-                                  src={acceptedProposal.professional.avatar || '/default-avatar.png'}
+                                  src={acceptedProposal.professional.avatar || '/default-avatar.svg'}
                                   alt={acceptedProposal.professional.full_name}
                                   className="w-12 h-12 rounded-full object-cover"
                                 />
@@ -1026,7 +1039,15 @@ export default function ProjectDetailPage() {
                                 <FileText className="h-4 w-4" />
                                 <span>View Contract Terms</span>
                               </Link>
-                              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                              <button 
+                                onClick={() => {
+                                  const acceptedProposal = proposals.find(p => p.status === 'accepted' && p.contract_id);
+                                  if (acceptedProposal) {
+                                    handleMessageFreelancer(acceptedProposal.professional.id);
+                                  }
+                                }}
+                                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                              >
                                 <MessageCircle className="h-4 w-4" />
                                 <span>Message Professional</span>
                               </button>
@@ -1347,7 +1368,7 @@ export default function ProjectDetailPage() {
               {/* Professional Header */}
               <div className="flex items-start space-x-4">
                 <img
-                  src={selectedProposal.professional.avatar || '/default-avatar.png'}
+                  src={selectedProposal.professional.avatar || '/default-avatar.svg'}
                   alt={selectedProposal.professional.name}
                   className="w-16 h-16 rounded-full object-cover"
                 />

@@ -5,7 +5,7 @@ from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .models import Conversation, Message, TypingIndicator, MessageReadStatus
-from .serializers import MessageSerializer
+from .serializers import MessageSerializer, MessageResponseSerializer
 
 User = get_user_model()
 
@@ -325,7 +325,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def serialize_message(self, message):
         """Serialize message for JSON response"""
-        serializer = MessageSerializer(message)
+        serializer = MessageResponseSerializer(message)
         return serializer.data
     
     @database_sync_to_async
@@ -500,4 +500,4 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             notification.read_at = timezone.now()
             notification.save()
         except Notification.DoesNotExist:
-            pass 
+            pass

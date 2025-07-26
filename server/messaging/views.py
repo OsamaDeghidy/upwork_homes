@@ -14,7 +14,7 @@ from asgiref.sync import async_to_sync
 from .models import Conversation, Message, MessageReadStatus, ConversationReadTime, MessageReaction, MessageAttachment
 from .serializers import (
     ConversationSerializer, ConversationDetailSerializer, ConversationCreateSerializer,
-    MessageSerializer, MessageCreateSerializer, ConversationStatsSerializer,
+    MessageSerializer, MessageCreateSerializer, MessageResponseSerializer, ConversationStatsSerializer,
     MessageBulkActionSerializer, ConversationSearchSerializer, MessageReactionSerializer, MessageAttachmentSerializer
 )
 
@@ -171,8 +171,15 @@ class MessageCreateView(generics.CreateAPIView):
         
         return context
     
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Create the message
         message = serializer.save()
+        
+        # Refetch message with related objects to avoid RelatedManager issues
+        message = Message.objects.select_related('sender').prefetch_related('attachments', 'reactions').get(id=message.id)
         
         # Update conversation timestamp
         conversation = message.conversation
@@ -217,7 +224,9 @@ class MessageCreateView(generics.CreateAPIView):
                 }
             )
         
-        return message
+        # Use MessageResponseSerializer for the response to properly handle related fields
+        response_serializer = MessageResponseSerializer(message, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
     @extend_schema(
         operation_id="create_message",
@@ -226,7 +235,7 @@ class MessageCreateView(generics.CreateAPIView):
         tags=["Messaging"],
     )
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        return self.create(request, *args, **kwargs)
 
 
 class MessageUpdateView(generics.UpdateAPIView):
@@ -585,18 +594,29 @@ def start_conversation_with_user(request, user_id):
     """بدء محادثة مع مستخدم محدد"""
     try:
         recipient = User.objects.get(id=user_id)
+        project_id = request.data.get('project_id')
         
         if recipient == request.user:
             return Response({
                 'error': 'Cannot start conversation with yourself'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Check if conversation already exists
-        existing_conversation = Conversation.objects.filter(
-            participants__in=[request.user, recipient]
-        ).annotate(
-            participant_count=Count('participants')
-        ).filter(participant_count=2).first()
+        # Check if conversation already exists for this project
+        if project_id:
+            existing_conversation = Conversation.objects.filter(
+                participants__in=[request.user, recipient],
+                project_id=project_id
+            ).annotate(
+                participant_count=Count('participants')
+            ).filter(participant_count=2).first()
+        else:
+            # Check if conversation already exists without project
+            existing_conversation = Conversation.objects.filter(
+                participants__in=[request.user, recipient],
+                project__isnull=True
+            ).annotate(
+                participant_count=Count('participants')
+            ).filter(participant_count=2).first()
         
         if existing_conversation:
             serializer = ConversationSerializer(
@@ -609,8 +629,27 @@ def start_conversation_with_user(request, user_id):
             })
         
         # Create new conversation
-        conversation = Conversation.objects.create()
+        conversation_data = {}
+        if project_id:
+            try:
+                from projects.models import Project
+                project = Project.objects.get(id=project_id)
+                conversation_data['project'] = project
+                conversation_data['title'] = f"Project: {project.title}"
+            except Project.DoesNotExist:
+                pass
+        
+        conversation = Conversation.objects.create(**conversation_data)
         conversation.participants.add(request.user, recipient)
+        
+        # Send initial message if provided
+        initial_message = request.data.get('initial_message')
+        if initial_message:
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                content=initial_message
+            )
         
         serializer = ConversationSerializer(
             conversation,

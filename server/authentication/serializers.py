@@ -178,7 +178,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
     """
     Serializer لتفاصيل المستخدم الكاملة
     """
-    phone = PhoneNumberField(required=False)
+    phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
     profile = UserProfileSerializer(read_only=True)
     verification_badges = serializers.SerializerMethodField()
     completion_rate = serializers.SerializerMethodField()
@@ -238,16 +238,25 @@ class UserDetailSerializer(serializers.ModelSerializer):
         # Validate phone number if provided
         if 'phone' in attrs and attrs['phone']:
             try:
-                # Test phone number validation
-                phone_value = attrs['phone']
+                phone_value = str(attrs['phone']).strip()
                 logger.info(f"📱 Validating phone number: {phone_value}")
                 
-                # If it's already a PhoneNumber object, it's valid
-                if hasattr(phone_value, 'is_valid'):
-                    if not phone_value.is_valid():
-                        logger.error(f"❌ Invalid phone number format: {phone_value}")
-                        raise serializers.ValidationError({"phone": "Invalid phone number format"})
+                # Remove all non-digit characters except + at the beginning
+                import re
+                cleaned_phone = re.sub(r'[^\d+]', '', phone_value)
                 
+                # Check if it's a reasonable phone number (8-15 digits)
+                digit_count = len(re.sub(r'[^\d]', '', cleaned_phone))
+                if digit_count < 8 or digit_count > 15:
+                    logger.error(f"❌ Invalid phone number length: {digit_count} digits")
+                    raise serializers.ValidationError({"phone": "Phone number must be between 8-15 digits"})
+                
+                # Store the cleaned phone number
+                attrs['phone'] = cleaned_phone
+                logger.info(f"✅ Phone number validated: {cleaned_phone}")
+                
+            except serializers.ValidationError:
+                raise
             except Exception as e:
                 logger.error(f"❌ Phone validation error: {str(e)}")
                 raise serializers.ValidationError({"phone": f"Phone validation error: {str(e)}"})
@@ -309,7 +318,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     """
     Serializer لتحديث بيانات المستخدم
     """
-    phone = PhoneNumberField(required=False)
+    phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
     
     class Meta:
         model = User
@@ -339,16 +348,25 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         # Validate phone number if provided
         if 'phone' in attrs and attrs['phone']:
             try:
-                # Test phone number validation
-                phone_value = attrs['phone']
+                phone_value = str(attrs['phone']).strip()
                 logger.info(f"📱 Validating phone number: {phone_value}")
                 
-                # If it's already a PhoneNumber object, it's valid
-                if hasattr(phone_value, 'is_valid'):
-                    if not phone_value.is_valid():
-                        logger.error(f"❌ Invalid phone number format: {phone_value}")
-                        raise serializers.ValidationError({"phone": "Invalid phone number format"})
+                # Remove all non-digit characters except + at the beginning
+                import re
+                cleaned_phone = re.sub(r'[^\d+]', '', phone_value)
                 
+                # Check if it's a reasonable phone number (8-15 digits)
+                digit_count = len(re.sub(r'[^\d]', '', cleaned_phone))
+                if digit_count < 8 or digit_count > 15:
+                    logger.error(f"❌ Invalid phone number length: {digit_count} digits")
+                    raise serializers.ValidationError({"phone": "Phone number must be between 8-15 digits"})
+                
+                # Store the cleaned phone number
+                attrs['phone'] = cleaned_phone
+                logger.info(f"✅ Phone number validated: {cleaned_phone}")
+                
+            except serializers.ValidationError:
+                raise
             except Exception as e:
                 logger.error(f"❌ Phone validation error: {str(e)}")
                 raise serializers.ValidationError({"phone": f"Phone validation error: {str(e)}"})

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, time
 from django.utils import timezone
 from django.db import models
 
-from .models import Appointment
+from .models import Appointment, ProfessionalAvailability
 from .serializers import AppointmentSerializer, AppointmentCreateSerializer
 
 
@@ -554,4 +554,171 @@ def set_professional_availability(request):
     return Response({
         'message': 'Availability updated successfully',
         'is_available': user.is_available
-    }) 
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    operation_id="get_professional_availability",
+    summary="Get Professional Availability Schedule",
+    description="Get professional's weekly availability schedule",
+    tags=["Calendar"]
+)
+def get_professional_availability(request):
+    """Get professional's weekly availability schedule"""
+    user = request.user
+    
+    if user.user_type not in ['home_pro', 'specialist', 'crew_member']:
+        return Response(
+            {'error': 'Only professionals can access availability'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Get all availability records for this professional
+    availability_records = ProfessionalAvailability.objects.filter(
+        professional=user
+    ).order_by('weekday')
+    
+    # Create weekly schedule structure
+    weekly_schedule = {
+        'monday': [],
+        'tuesday': [],
+        'wednesday': [],
+        'thursday': [],
+        'friday': [],
+        'saturday': [],
+        'sunday': []
+    }
+    
+    weekday_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    
+    for record in availability_records:
+        day_name = weekday_names[record.weekday]
+        slot_data = {
+            'id': record.id,
+            'start_time': record.start_time.strftime('%H:%M'),
+            'end_time': record.end_time.strftime('%H:%M'),
+            'type': 'available' if record.is_available else 'busy'
+        }
+        
+        # Add break times if they exist
+        if record.break_start and record.break_end:
+            slot_data['break_start'] = record.break_start.strftime('%H:%M')
+            slot_data['break_end'] = record.break_end.strftime('%H:%M')
+        
+        weekly_schedule[day_name].append(slot_data)
+    
+    return Response({
+        'professional_id': user.id,
+        'weekly_schedule': weekly_schedule,
+        'timezone': 'UTC',  # You can make this configurable
+        'buffer_time': 15,  # Default buffer time in minutes
+        'max_advance_booking': 30  # Default max advance booking in days
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@extend_schema(
+    operation_id="save_professional_availability",
+    summary="Save Professional Availability Schedule",
+    description="Save professional's weekly availability schedule",
+    tags=["Calendar"],
+    request={
+        "type": "object",
+        "properties": {
+            "weekly_schedule": {
+                "type": "object",
+                "properties": {
+                    "monday": {"type": "array"},
+                    "tuesday": {"type": "array"},
+                    "wednesday": {"type": "array"},
+                    "thursday": {"type": "array"},
+                    "friday": {"type": "array"},
+                    "saturday": {"type": "array"},
+                    "sunday": {"type": "array"}
+                }
+            },
+            "timezone": {"type": "string"},
+            "buffer_time": {"type": "integer"},
+            "max_advance_booking": {"type": "integer"}
+        }
+    }
+)
+def save_professional_availability(request):
+    """Save professional's weekly availability schedule"""
+    user = request.user
+    
+    if user.user_type not in ['home_pro', 'specialist', 'crew_member']:
+        return Response(
+            {'error': 'Only professionals can set availability'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    data = request.data
+    weekly_schedule = data.get('weekly_schedule', {})
+    
+    # Clear existing availability records for this professional
+    ProfessionalAvailability.objects.filter(professional=user).delete()
+    
+    weekday_mapping = {
+        'monday': 0,
+        'tuesday': 1,
+        'wednesday': 2,
+        'thursday': 3,
+        'friday': 4,
+        'saturday': 5,
+        'sunday': 6
+    }
+    
+    created_records = []
+    
+    try:
+        for day_name, slots in weekly_schedule.items():
+            if day_name not in weekday_mapping:
+                continue
+                
+            weekday = weekday_mapping[day_name]
+            
+            for slot in slots:
+                start_time = datetime.strptime(slot['start_time'], '%H:%M').time()
+                end_time = datetime.strptime(slot['end_time'], '%H:%M').time()
+                is_available = slot.get('type', 'available') == 'available'
+                
+                # Handle break times if provided
+                break_start = None
+                break_end = None
+                if 'break_start' in slot and 'break_end' in slot:
+                    break_start = datetime.strptime(slot['break_start'], '%H:%M').time()
+                    break_end = datetime.strptime(slot['break_end'], '%H:%M').time()
+                
+                availability_record = ProfessionalAvailability.objects.create(
+                    professional=user,
+                    weekday=weekday,
+                    start_time=start_time,
+                    end_time=end_time,
+                    is_available=is_available,
+                    break_start=break_start,
+                    break_end=break_end
+                )
+                
+                created_records.append({
+                    'id': availability_record.id,
+                    'day': day_name,
+                    'start_time': slot['start_time'],
+                    'end_time': slot['end_time'],
+                    'type': slot.get('type', 'available')
+                })
+    
+    except Exception as e:
+        return Response(
+            {'error': f'Failed to save availability: {str(e)}'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    return Response({
+        'message': 'Availability schedule saved successfully',
+        'created_records': len(created_records),
+        'records': created_records
+    })

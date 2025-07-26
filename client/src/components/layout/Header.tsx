@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Menu, X, Bell, User, Briefcase, Users, MessageCircle, Settings, Plus, Search, BarChart3, DollarSign, Heart, FileText, Home, Info, Phone, HelpCircle, Calendar, Clock, CheckSquare, Timer, ChevronDown, LogOut, Crown, FileCheck, Send, Star, Eye } from 'lucide-react';
+import { Menu, X, Bell, User, Briefcase, Users, MessageCircle, Settings, Plus, Search, BarChart3, DollarSign, Heart, FileText, Home, Info, Phone, HelpCircle, Calendar, Clock, CheckSquare, Timer, ChevronDown, LogOut, Crown, FileCheck, Send, Star, Eye, CreditCard } from 'lucide-react';
 import { getMainNavRoutes, type UserRole } from '@/lib/routes';
 import { useAuthStore } from '@/lib/store';
 import { authService } from '@/lib/auth';
@@ -183,7 +183,7 @@ export default function Header() {
                 >
                   <div className="relative">
                     <img
-                      src={user.avatar || '/default-avatar.png'}
+                      src={user.avatar || '/default-avatar.svg'}
                       alt={`${user.first_name} ${user.last_name}`}
                       className="h-10 w-10 rounded-xl object-cover border-2 border-gray-200 group-hover:border-primary-300 transition-all duration-300"
                     />
@@ -203,7 +203,7 @@ export default function Header() {
                     <div className="px-4 py-4 border-b border-gray-100">
                       <div className="flex items-center space-x-3">
                         <img
-                          src={user.avatar || '/default-avatar.png'}
+                          src={user.avatar || '/default-avatar.svg'}
                           alt={`${user.first_name} ${user.last_name}`}
                           className="h-12 w-12 rounded-xl object-cover"
                         />
@@ -230,6 +230,51 @@ export default function Header() {
                       <User className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
                       Profile
                     </Link>
+                    
+                    {/* Client-specific menu items */}
+                    {userRole === 'client' && (
+                      <>
+                        <Link
+                          href="/client/projects"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <Briefcase className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Projects
+                        </Link>
+                        
+                        <Link
+                          href="/client/contracts"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <FileCheck className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Contracts
+                        </Link>
+                        
+                        <Link
+                          href="/client/favorites"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <Heart className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Favorites
+                        </Link>
+                        
+                        <Link
+                          href="/client/payments"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <CreditCard className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Payments
+                        </Link>
+                        
+                        <Link
+                          href="/client/reviews"
+                          className="flex items-center px-4 py-3 text-sm text-dark-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-600 transition-all duration-300 group"
+                        >
+                          <Star className="h-4 w-4 mr-3 text-gray-400 group-hover:text-primary-500" />
+                          Reviews
+                        </Link>
+                      </>
+                    )}
                     
                     <Link
                       href="/settings"
@@ -342,7 +387,7 @@ export default function Header() {
               <div className="mb-4 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl">
                 <div className="flex items-center space-x-3">
                   <img
-                    src={user?.avatar || '/default-avatar.png'}
+                    src={user?.avatar || '/default-avatar.svg'}
                     alt={`${user?.first_name} ${user?.last_name}`}
                     className="h-12 w-12 rounded-xl object-cover border-2 border-white shadow-md"
                   />

@@ -16,15 +16,14 @@ import {
   ArrowRight,
   MoreVertical,
   Share2,
-  X,
   Loader2
 } from 'lucide-react';
 import { contractsService } from '@/lib/contracts';
 import { Contract, ContractFilters } from '@/lib/types';
-import { useAuth } from '@/lib/auth';
+import { useAuthStore } from '@/lib/store';
 
 export default function ProfessionalContractsPage() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +36,6 @@ export default function ProfessionalContractsPage() {
     completion_rate: 0
   });
   const [, setSelectedContract] = useState<Contract | null>(null);
-  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const [, setShowContractModal] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -248,123 +246,117 @@ export default function ProfessionalContractsPage() {
 
         {/* Contracts List */}
         {!loading && !error && (
-        <div className="grid grid-cols-1 gap-6">
-          {formattedContracts.map((contract) => (
-            <div key={contract.id} className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-dark-900">{contract.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(contract.status)}`}>
-                      {contract.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-                    <div className="flex items-center space-x-1">
-                      <User className="h-4 w-4" />
-                      <span>Client #{contract.client}</span>
+          <div className="grid grid-cols-1 gap-6">
+            {formattedContracts.map((contract) => (
+              <div key={contract.id} className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-lg font-semibold text-dark-900">{contract.title}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(contract.status)}`}>
+                        {contract.status}
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{contract.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>{contract.startDate} - {contract.endDate}</span>
-                    </div>
-                  </div>
-                  <p className="text-gray-700 mb-4">{contract.description || 'No description available'}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setSelectedContract(contract)}
-                    className="text-primary-600 hover:text-primary-700 p-2 rounded-lg hover:bg-primary-50 transition-colors duration-200"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                  <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                    <MoreVertical className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Payment Progress */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Payment Progress</span>
-                  <span className="text-sm font-medium text-dark-900">
-                    {contract.paidAmount} / {contract.contractValue}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${contract.completion_percentage || 0}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>{contract.completion_percentage || 0}% Complete</span>
-                  <span>{contract.remainingAmount} Remaining</span>
-                </div>
-              </div>
-
-              {/* Contract Details */}
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Contract Details</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-dark-900">Payment Type</p>
-                      <p className="text-xs text-gray-600 capitalize">{contract.payment_type || 'Fixed'}</p>
-                    </div>
-                  </div>
-                  {contract.hourly_rate && (
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-dark-900">Hourly Rate</p>
-                        <p className="text-xs text-gray-600">${contract.hourly_rate}/hr</p>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+                      <div className="flex items-center space-x-1">
+                        <User className="h-4 w-4" />
+                        <span>Client #{contract.client}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="h-4 w-4" />
+                        <span>{contract.location}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>{contract.startDate} - {contract.endDate}</span>
                       </div>
                     </div>
-                  )}
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-dark-900">Payment Terms</p>
-                      <p className="text-xs text-gray-600">{contract.paymentTerms}</p>
+                    <p className="text-gray-700 mb-4">{contract.description || 'No description available'}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setSelectedContract(contract)}
+                      className="text-primary-600 hover:text-primary-700 p-2 rounded-lg hover:bg-primary-50 transition-colors duration-200"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Payment Progress */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600">Payment Progress</span>
+                    <span className="text-sm font-medium text-dark-900">
+                      {contract.paidAmount} / {contract.contractValue}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${contract.completion_percentage || 0}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>{contract.completion_percentage || 0}% Complete</span>
+                    <span>{contract.remainingAmount} Remaining</span>
+                  </div>
+                </div>
+
+                {/* Contract Details */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">Contract Details</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-dark-900">Payment Type</p>
+                        <p className="text-xs text-gray-600 capitalize">{contract.payment_type || 'Fixed'}</p>
+                      </div>
+                    </div>
+                    {contract.hourly_rate && (
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-dark-900">Hourly Rate</p>
+                          <p className="text-xs text-gray-600">${contract.hourly_rate}/hr</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-dark-900">Payment Terms</p>
+                        <p className="text-xs text-gray-600">{contract.paymentTerms}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setShowAddPaymentModal(true)}
-                    className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center space-x-2 text-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Request Payment</span>
-                  </button>
-                  <Link
-                    href={`/client/projects/${contract.id}`}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center space-x-2 text-sm"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span>View Project</span>
-                  </Link>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                    <Download className="h-4 w-4" />
-                  </button>
-                  <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                    <Share2 className="h-4 w-4" />
-                  </button>
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Link
+                      href={`http://localhost:3000/client/contracts/10`}
+                      className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center space-x-2 text-sm"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>View Details</span>
+                    </Link>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                      <Download className="h-4 w-4" />
+                    </button>
+                    <button className="text-gray-600 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                      <Share2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {formattedContracts.length === 0 && (
           <div className="text-center py-12">
@@ -373,85 +365,9 @@ export default function ProfessionalContractsPage() {
             <p className="text-gray-600">Start by creating your first contract or adjust your filters.</p>
           </div>
         )}
-        )}
       </div>
 
-      {/* Add Payment Modal */}
-      {showAddPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-dark-900">Request Payment</h3>
-              <button
-                onClick={() => setShowAddPaymentModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Milestone
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                  <option>Design Phase - $3,000</option>
-                  <option>Installation - $5,000</option>
-                  <option>Final Touches - $5,000</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Payment description..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Due Date
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div className="flex space-x-3 pt-4">
-                <button
-                  onClick={() => setShowAddPaymentModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => setShowAddPaymentModal(false)}
-                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
-                >
-                  Send Request
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

@@ -252,7 +252,7 @@ export default function PostProjectPage() {
       const response = await projectsService.createProject(projectData);
       
       alert('Project created successfully!');
-      router.push('/projects');
+      router.push('/client/projects');
     } catch (error: any) {
       console.error('Failed to create project:', error);
       alert(error.response?.data?.message || 'Failed to create project. Please try again.');

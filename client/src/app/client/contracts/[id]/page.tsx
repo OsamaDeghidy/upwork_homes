@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { contractsService } from '@/lib/contracts';
 import { useAuthStore } from '@/lib/store';
+import AppointmentsSection from '@/components/AppointmentsSection';
 
 interface ContractDetail {
   id: number;
@@ -323,7 +324,8 @@ export default function ContractDetailPage() {
     { id: 'milestones', label: 'Milestones', icon: CheckCircle },
     { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'documents', label: 'Documents', icon: File },
-    { id: 'amendments', label: 'Amendments', icon: Edit2 }
+    { id: 'amendments', label: 'Amendments', icon: Edit2 },
+    { id: 'appointments', label: 'Appointments', icon: Calendar }
   ];
 
   const contractStatuses = [
@@ -797,6 +799,16 @@ export default function ContractDetailPage() {
                       <p className="text-gray-600">No amendments have been made to this contract.</p>
                     </div>
                   </div>
+                )}
+
+                {/* Appointments Tab */}
+                {activeTab === 'appointments' && (
+                  <AppointmentsSection 
+                    contractId={contract.id}
+                    professionalId={typeof contract.professional === 'object' ? contract.professional?.id || contract.professional : contract.professional}
+                    clientId={contract.client}
+                    projectId={contract.project}
+                  />
                 )}
               </div>
             </div>

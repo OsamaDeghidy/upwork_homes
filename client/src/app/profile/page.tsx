@@ -134,7 +134,7 @@ export default function ProfilePage() {
      id: user.id,
      name: `${user.first_name} ${user.last_name}`,
      title: user.company_name || getUserTypeDisplay(user.user_type),
-     avatar: user.avatar || '/default-avatar.png',
+     avatar: user.avatar || '/default-avatar.svg',
      email: user.email,
      phone: user.phone || 'Not specified',
      location: user.location || 'Not specified',
@@ -207,11 +207,23 @@ export default function ProfilePage() {
   const handleSaveProfile = async () => {
     try {
       setIsUpdating(true);
+      console.log('🔄 Starting profile update...');
       
       // Update avatar if a new one was selected
       if (avatarFile) {
-        await authService.updateAvatar(avatarFile);
-        toast.success('Avatar updated successfully!');
+        console.log('📸 Updating avatar...');
+        try {
+          await authService.updateAvatar(avatarFile);
+          toast.success('Avatar updated successfully!');
+          console.log('✅ Avatar updated successfully');
+        } catch (avatarError: any) {
+          console.error('❌ Avatar update failed:', avatarError);
+          const avatarErrorMsg = avatarError.response?.data?.message || 
+                                avatarError.response?.data?.error || 
+                                'Failed to update avatar';
+          toast.error(`Avatar Error: ${avatarErrorMsg}`);
+          // Continue with profile update even if avatar fails
+        }
       }
       
       // Clean the form data to remove empty strings and null values
@@ -232,8 +244,11 @@ export default function ProfilePage() {
         return acc;
       }, {} as any);
       
+      console.log('📝 Updating profile data:', cleanedData);
+      
       // Update profile data
       const updatedUser = await authService.updateUser(cleanedData);
+      console.log('✅ Profile data updated successfully');
       
       // Update the auth store
       useAuthStore.getState().setUser(updatedUser);
@@ -244,13 +259,45 @@ export default function ProfilePage() {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
     } catch (error: any) {
-      console.error('Error updating profile:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          (error.response?.data && typeof error.response.data === 'object' ? 
-                            Object.values(error.response.data).flat().join(', ') : 
-                            'Failed to update profile');
-      toast.error(errorMessage);
+      console.error('❌ Error updating profile:', error);
+      console.error('❌ Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      let errorMessage = 'Failed to update profile';
+      
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.error) {
+          errorMessage = data.error;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (typeof data === 'object') {
+          // Handle field-specific errors
+          const fieldErrors = [];
+          for (const [field, errors] of Object.entries(data)) {
+            if (Array.isArray(errors)) {
+              fieldErrors.push(`${field}: ${errors.join(', ')}`);
+            } else if (typeof errors === 'string') {
+              fieldErrors.push(`${field}: ${errors}`);
+            }
+          }
+          if (fieldErrors.length > 0) {
+            errorMessage = fieldErrors.join('; ');
+          }
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(`Profile Update Error: ${errorMessage}`);
     } finally {
       setIsUpdating(false);
     }

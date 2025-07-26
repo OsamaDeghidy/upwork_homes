@@ -277,11 +277,28 @@ if os.environ.get('REDIS_URL'):
     }
 
 # Channels Configuration
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
+# Try Redis first, fallback to InMemory if Redis is not available
+try:
+    import redis
+    # Test Redis connection
+    r = redis.Redis(host='localhost', port=6379, db=0)
+    r.ping()
+    # If Redis is available, use it
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [('localhost', 6379)],
+            },
+        },
+    }
+except (ImportError, redis.ConnectionError, redis.ResponseError):
+    # Fallback to InMemory if Redis is not available
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 # For production, use Redis
 if os.environ.get('REDIS_URL'):
@@ -426,3 +443,8 @@ LOGGING = {
 
 # Create logs directory if it doesn't exist
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
+
+# Phone Number Field Configuration
+PHONENUMBER_DEFAULT_REGION = 'US'
+PHONENUMBER_DB_FORMAT = 'NATIONAL'
+PHONENUMBER_DEFAULT_FORMAT = 'NATIONAL'

@@ -1,7 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import RegexValidator
-from phonenumber_field.modelfields import PhoneNumberField
 from django.utils import timezone
 
 
@@ -31,10 +30,11 @@ class User(AbstractUser):
         help_text='Type of user account'
     )
     
-    phone = PhoneNumberField(
+    phone = models.CharField(
+        max_length=20,
         blank=True,
         null=True,
-        help_text='Phone number with country code'
+        help_text='Phone number'
     )
     
     location = models.CharField(
@@ -294,7 +294,8 @@ class UserProfile(models.Model):
         help_text='Emergency contact name'
     )
     
-    emergency_contact_phone = PhoneNumberField(
+    emergency_contact_phone = models.CharField(
+        max_length=20,
         blank=True,
         null=True,
         help_text='Emergency contact phone'

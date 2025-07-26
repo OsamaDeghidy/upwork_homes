@@ -307,8 +307,8 @@ export default function ProjectDetailsPage() {
   };
 
   const handleMessageFreelancer = (freelancerId: number) => {
-    // Navigate to messages page with the freelancer
-    router.push(`/messages?freelancer=${freelancerId}`);
+    // Navigate to messages page with the freelancer and project
+    router.push(`/messages?freelancer=${freelancerId}&project=${project.id}`);
   };
 
   const handleProposalSubmit = async (e: React.FormEvent) => {
@@ -565,7 +565,7 @@ export default function ProjectDetailsPage() {
                     <div key={proposal.id} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors duration-200">
                       <div className="flex items-start space-x-4">
                         <img
-                          src={proposal.professional?.avatar || proposal.freelancer?.avatar || '/default-avatar.png'}
+                          src={proposal.professional?.avatar || proposal.freelancer?.avatar || '/default-avatar.svg'}
                           alt={proposal.professional?.display_name || proposal.professional?.full_name || proposal.freelancer?.name}
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -725,7 +725,7 @@ export default function ProjectDetailsPage() {
               
               <div className="flex items-center space-x-4 mb-4">
                 <img
-                  src={project.client?.profile_picture || '/default-avatar.png'}
+                  src={project.client?.profile_picture || '/default-avatar.svg'}
                   alt={`${project.client?.first_name || ''} ${project.client?.last_name || ''}`}
                   className="w-16 h-16 rounded-xl object-cover"
                 />

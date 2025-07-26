@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Calendar as CalendarIcon,
@@ -17,29 +17,68 @@ import {
   AlertCircle,
   CheckCircle,
   Timer,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
+import { calendarService, Appointment, AppointmentStats } from '@/lib/calendar';
+import { useAuthStore } from '@/lib/store';
 
 export default function CalendarPage() {
+  const { user } = useAuthStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [, setShowAddAppointment] = useState(false);
-  const [, setSelectedAppointment] = useState<{
-    id: number;
-    title: string;
-    client: string;
-    date: string;
-    time: string;
-    type: string;
-    status: string;
-    notes?: string;
-  } | null>(null);
+  const [, setSelectedAppointment] = useState<Appointment | null>(null);
   const [filter, setFilter] = useState('all');
   const [, setShowModal] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [stats, setStats] = useState<AppointmentStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample appointments data
-  const appointments = [
+  // Fetch appointments from API
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const filters = {
+        status: filter === 'all' ? undefined : filter,
+        date_from: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0],
+        date_to: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0]
+      };
+      
+      const response = await calendarService.getAppointments(filters);
+      setAppointments(response.results || []);
+    } catch (err) {
+      setError('Failed to load appointments. Please try again.');
+      console.error('Error fetching appointments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch appointment statistics
+  const fetchStats = async () => {
+    try {
+      const response = await calendarService.getAppointmentStats();
+      setStats(response);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    if (user) {
+      fetchAppointments();
+      fetchStats();
+    }
+  }, [user, currentDate, filter]);
+
+  // Sample appointments data for fallback
+  const sampleAppointments = [
     {
       id: 1,
       title: 'Kitchen Consultation',
@@ -185,11 +224,11 @@ export default function CalendarPage() {
     ? appointments 
     : appointments.filter(app => app.type === filter);
 
-  // Stats
-  const stats = [
+  // Stats from API or calculated from appointments
+  const displayStats = [
     {
       label: 'Today\'s Appointments',
-      value: todayAppointments.length,
+      value: stats?.today_appointments || todayAppointments.length,
       subtext: 'Scheduled',
       icon: CalendarIcon,
       color: 'text-blue-600',
@@ -197,7 +236,7 @@ export default function CalendarPage() {
     },
     {
       label: 'This Week',
-      value: upcomingAppointments.length,
+      value: stats?.this_week_appointments || upcomingAppointments.length,
       subtext: 'Upcoming',
       icon: Clock,
       color: 'text-green-600',
@@ -205,7 +244,7 @@ export default function CalendarPage() {
     },
     {
       label: 'Pending Confirmation',
-      value: appointments.filter(a => a.status === 'pending').length,
+      value: stats?.pending_appointments || appointments.filter(a => a.status === 'scheduled').length,
       subtext: 'Awaiting Response',
       icon: AlertCircle,
       color: 'text-yellow-600',
@@ -213,7 +252,7 @@ export default function CalendarPage() {
     },
     {
       label: 'Total Hours',
-      value: appointments.reduce((sum, app) => sum + app.duration, 0) / 60,
+      value: Math.round((stats?.total_hours || appointments.reduce((sum, app) => sum + app.duration, 0) / 60) * 10) / 10,
       subtext: 'This Month',
       icon: Timer,
       color: 'text-purple-600',
@@ -296,23 +335,43 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-dark-900">{stat.value}</p>
-                  <p className="text-sm text-gray-600">{stat.subtext}</p>
-                </div>
-              </div>
-              <p className="text-gray-700 font-medium">{stat.label}</p>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+            <span className="ml-2 text-gray-600">Loading appointments...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+              <span className="text-red-700">{error}</span>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {displayStats.map((stat, index) => (
+              <div key={index} className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-3 rounded-xl ${stat.bgColor}`}>
+                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-dark-900">{stat.value}</p>
+                    <p className="text-sm text-gray-600">{stat.subtext}</p>
+                  </div>
+                </div>
+                <p className="text-gray-700 font-medium">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Calendar Section */}
@@ -417,7 +476,10 @@ export default function CalendarPage() {
                               {appointment.title}
                             </h4>
                             <p className="text-gray-600 text-xs mt-1">
-                              {appointment.client}
+                              {typeof appointment.client === 'string' 
+                                ? appointment.client 
+                                : `${appointment.client?.first_name || ''} ${appointment.client?.last_name || ''}`.trim() || appointment.client?.username || 'Unknown Client'
+                              }
                             </p>
                             <p className="text-gray-500 text-xs mt-1">
                               {appointment.time}
@@ -484,94 +546,99 @@ export default function CalendarPage() {
         </div>
 
         {/* All Appointments */}
-        <div className="mt-8 bg-white rounded-2xl shadow-upwork border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-heading font-semibold text-xl text-dark-900">
-              All Appointments
-            </h2>
-            <div className="flex items-center space-x-4">
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                {appointmentTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label} ({type.count})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {filteredAppointments.map((appointment) => {
-              const IconComponent = getAppointmentIcon(appointment.type);
-              return (
-                <div
-                  key={appointment.id}
-                  className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
-                  onClick={() => setSelectedAppointment(appointment)}
+        {!loading && (
+          <div className="mt-8 bg-white rounded-2xl shadow-upwork border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-heading font-semibold text-xl text-dark-900">
+                All Appointments
+              </h2>
+              <div className="flex items-center space-x-4">
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4">
-                      <div className="p-3 bg-primary-50 rounded-lg">
-                        <IconComponent className="h-6 w-6 text-primary-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-dark-900 text-lg">
-                          {appointment.title}
-                        </h3>
-                        <p className="text-gray-600 mt-1">
-                          Client: {appointment.client}
-                        </p>
-                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <CalendarIcon className="h-4 w-4" />
-                            <span>{appointment.date}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{appointment.time}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{appointment.location}</span>
-                          </div>
+                  {appointmentTypes.map(type => (
+                    <option key={type.value} value={type.value}>
+                      {type.label} ({type.count})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {filteredAppointments.map((appointment) => {
+                const IconComponent = getAppointmentIcon(appointment.type);
+                return (
+                  <div
+                    key={appointment.id}
+                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+                    onClick={() => setSelectedAppointment(appointment)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4">
+                        <div className="p-3 bg-primary-50 rounded-lg">
+                          <IconComponent className="h-6 w-6 text-primary-600" />
                         </div>
-                        <div className="flex items-center space-x-2 mt-3">
-                          <span className={`text-xs px-3 py-1 rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
-                            {appointment.status}
-                          </span>
-                          <span className={`text-xs px-3 py-1 rounded-full ${typeColors[appointment.type as keyof typeof typeColors]}`}>
-                            {appointment.type.replace('_', ' ')}
-                          </span>
-                          <span className={`text-xs px-3 py-1 rounded-full ${priorityColors[appointment.priority as keyof typeof priorityColors]}`}>
-                            {appointment.priority} priority
-                          </span>
-                        </div>
-                        {appointment.notes && (
-                          <p className="text-gray-600 text-sm mt-2 line-clamp-2">
-                            {appointment.notes}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-dark-900 text-lg">
+                            {appointment.title}
+                          </h3>
+                          <p className="text-gray-600 mt-1">
+                            Client: {typeof appointment.client === 'string' 
+                              ? appointment.client 
+                              : `${appointment.client?.first_name || ''} ${appointment.client?.last_name || ''}`.trim() || appointment.client?.username || 'Unknown Client'
+                            }
                           </p>
-                        )}
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                            <div className="flex items-center space-x-1">
+                              <CalendarIcon className="h-4 w-4" />
+                              <span>{appointment.date}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{appointment.time}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <MapPin className="h-4 w-4" />
+                              <span>{appointment.location}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2 mt-3">
+                            <span className={`text-xs px-3 py-1 rounded-full ${statusColors[appointment.status as keyof typeof statusColors]}`}>
+                              {appointment.status}
+                            </span>
+                            <span className={`text-xs px-3 py-1 rounded-full ${typeColors[appointment.type as keyof typeof typeColors]}`}>
+                              {appointment.type.replace('_', ' ')}
+                            </span>
+                            <span className={`text-xs px-3 py-1 rounded-full ${priorityColors[appointment.priority as keyof typeof priorityColors]}`}>
+                              {appointment.priority} priority
+                            </span>
+                          </div>
+                          {appointment.notes && (
+                            <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                              {appointment.notes}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button className="p-2 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors duration-200">
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button className="p-2 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors duration-200">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
-} 
+}

@@ -18,4 +18,8 @@ urlpatterns = [
     path('available-slots/', views.get_available_slots, name='available_slots'),
     path('professional-calendar/', views.get_professional_calendar, name='professional_calendar'),
     path('set-availability/', views.set_professional_availability, name='set_availability'),
-] 
+    
+    # Professional availability schedule
+    path('availability/', views.get_professional_availability, name='get_availability'),
+    path('availability/save/', views.save_professional_availability, name='save_availability'),
+]

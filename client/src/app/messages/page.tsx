@@ -33,6 +33,34 @@ interface FileUpload {
   error?: string;
 }
 
+interface TimeSlot {
+  start: string;
+  end: string;
+}
+
+interface DaySchedule {
+  isAvailable: boolean;
+  slots: TimeSlot[];
+}
+
+interface WeeklySchedule {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
+interface Professional {
+  id: number;
+  name: string;
+  availability?: {
+    weeklySchedule: WeeklySchedule;
+  };
+}
+
 export default function MessagesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -70,8 +98,9 @@ export default function MessagesPage() {
         
         // Check if there's a freelancer parameter to start a new conversation
         const freelancerId = searchParams.get('freelancer');
+        const projectId = searchParams.get('project');
         if (freelancerId && !creatingConversation) {
-          await handleStartConversationWithFreelancer(parseInt(freelancerId));
+          await handleStartConversationWithFreelancer(parseInt(freelancerId), projectId ? parseInt(projectId) : undefined);
         } else if (response.results.length > 0 && !selectedChat) {
           // Select first conversation if no specific chat is selected
           setSelectedChat(response.results[0].id);
@@ -219,31 +248,42 @@ export default function MessagesPage() {
   };
 
   // Handle starting conversation with freelancer
-  const handleStartConversationWithFreelancer = async (freelancerId: number) => {
+  const handleStartConversationWithFreelancer = async (freelancerId: number, projectId?: number) => {
     try {
       setCreatingConversation(true);
       
-      // Check if conversation already exists
-      const existingConversation = conversations.find(conv => 
-        conv.participants.some(p => p.id === freelancerId)
-      );
+      // Check if conversation already exists for this project
+      const existingConversation = conversations.find(conv => {
+        if (!conv.participants || !Array.isArray(conv.participants)) return false;
+        
+        const hasFreelancer = conv.participants.some(p => p.id === freelancerId);
+        
+        // If project is specified, check if conversation is for the same project
+        if (projectId) {
+          return hasFreelancer && conv.project?.id === projectId;
+        } else {
+          // If no project specified, find conversation without project
+          return hasFreelancer && !conv.project;
+        }
+      });
       
       if (existingConversation) {
         setSelectedChat(existingConversation.id);
-        // Remove freelancer parameter from URL
+        // Remove parameters from URL
         router.replace('/messages');
       } else {
         // Create new conversation
         const newConversation = await messagingService.startConversationWithUser(
           freelancerId,
-          'Hello! I\'m interested in discussing the project proposal.'
+          'Hello! I\'m interested in discussing the project proposal.',
+          projectId
         );
         
         // Update conversations list
-        setConversations(prev => [newConversation, ...prev]);
-        setSelectedChat(newConversation.id);
+        setConversations(prev => [newConversation.conversation || newConversation, ...prev]);
+        setSelectedChat((newConversation.conversation || newConversation).id);
         
-        // Remove freelancer parameter from URL
+        // Remove parameters from URL
         router.replace('/messages');
       }
     } catch (error) {
@@ -412,7 +452,7 @@ export default function MessagesPage() {
 
   // Get selected conversation and other participant
   const selectedConversation = conversations.find(conv => conv.id === selectedChat);
-  const otherParticipant = selectedConversation?.participants.find(p => p.id !== currentUser?.id);
+  const otherParticipant = selectedConversation?.other_participant || null;
   
   // Format user display name
   const formatUserName = (user: User | null | undefined) => {
@@ -469,7 +509,7 @@ export default function MessagesPage() {
   const filteredConversations = conversations.filter(conv => {
     // Search filter
     if (searchQuery) {
-      const otherParticipant = conv.participants.find(p => p.id !== currentUser?.id);
+      const otherParticipant = conv.other_participant;
       const participantName = otherParticipant ? formatUserName(otherParticipant).toLowerCase() : '';
       const projectTitle = conv.project?.title?.toLowerCase() || '';
       const lastMessageContent = conv.last_message?.content?.toLowerCase() || '';
@@ -484,7 +524,9 @@ export default function MessagesPage() {
     
     // Status filters
     if (selectedFilter === 'unread') return conv.unread_count > 0;
-    if (selectedFilter === 'online') return conv.participants.some(p => p.is_available);
+    if (selectedFilter === 'online') {
+      return conv.other_participant?.is_available || false;
+    }
     
     return true;
   });
@@ -525,6 +567,7 @@ export default function MessagesPage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
+  const [selectedConversationForSchedule, setSelectedConversationForSchedule] = useState<Professional | null>(null);
 
   // Handle date selection
   const handleDateChange = (date: string) => {
@@ -623,12 +666,12 @@ export default function MessagesPage() {
                     </div>
                   ) : (
                     filteredConversations.map((conversation) => {
-                      const otherParticipant = conversation.participants?.find(p => p.id !== currentUser?.id);
+                      const otherParticipant = conversation.other_participant;
                       const lastMessage = conversation.last_message;
                       
                       return (
                         <div
-                          key={conversation.id}
+                          key={`conversation-${conversation.id}`}
                           onClick={() => setSelectedChat(conversation.id)}
                           className={`p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
                             selectedChat === conversation.id ? 'bg-primary-50 border-primary-200' : ''
@@ -647,7 +690,9 @@ export default function MessagesPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center space-x-1">
-                                  <h3 className="font-semibold text-dark-900 truncate">{formatUserName(otherParticipant) || 'Unknown User'}</h3>
+                                  <h3 className="font-semibold text-dark-900 truncate">
+                                    {conversation.project ? conversation.project.title : (formatUserName(otherParticipant) || 'Unknown User')}
+                                  </h3>
                                   {otherParticipant?.is_verified && (
                                     <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                                   )}
@@ -727,35 +772,41 @@ export default function MessagesPage() {
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg">
                               {formatUserRole(otherParticipant).charAt(0).toUpperCase()}
                             </div>
-                            {selectedConversation.participants?.find(p => p.id !== selectedConversation.current_user_id)?.is_available && (
+                            {otherParticipant?.is_available && (
                               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
                             )}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
-                              <h3 className="font-semibold text-dark-900">{selectedConversation.participants?.find(p => p.id !== selectedConversation.current_user_id)?.name || 'Unknown User'}</h3>
-                              {selectedConversation.participants?.find(p => p.id !== selectedConversation.current_user_id)?.is_verified && (
+                              <h3 className="font-semibold text-dark-900">
+                                {selectedConversation?.project ? selectedConversation.project.title : (formatUserName(otherParticipant) || 'Unknown User')}
+                              </h3>
+                              {otherParticipant?.is_verified && (
                                 <CheckCircle className="h-4 w-4 text-green-500" />
                               )}
-                              {selectedConversation.participants?.find(p => p.id !== selectedConversation.current_user_id)?.rating && (
+                              {otherParticipant?.rating && (
                                 <div className="flex items-center space-x-1">
                                   <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                  <span className="text-sm text-gray-600">{selectedConversation.participants?.find(p => p.id !== selectedConversation.current_user_id)?.rating}</span>
+                                  <span className="text-sm text-gray-600">{otherParticipant.rating}</span>
                                 </div>
                               )}
                             </div>
-                            <p className="text-sm text-gray-600">{selectedConversation.participants?.find(p => p.id !== selectedConversation.current_user_id)?.title || 'Professional'}</p>
+                            {selectedConversation?.project ? (
+                              <p className="text-sm text-gray-600">with {formatUserName(otherParticipant) || 'Unknown User'} • {formatUserRole(otherParticipant) || 'Professional'}</p>
+                            ) : (
+                              <p className="text-sm text-gray-600">{formatUserRole(otherParticipant) || 'Professional'}</p>
+                            )}
                             <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                              <span>Last seen: {selectedConversation.updated_at ? new Date(selectedConversation.updated_at).toLocaleString() : 'Unknown'}</span>
+                              <span>Last seen: {selectedConversation?.updated_at ? new Date(selectedConversation.updated_at).toLocaleString() : 'Unknown'}</span>
                             </div>
                           </div>
                         </div>
                         
                         {/* Enhanced Action Buttons */}
                         <div className="flex items-center space-x-2">
-                          {selectedConversation.project && (
+                          {selectedConversation?.project && (
                             <Link
-                              href={`/client/projects/${selectedConversation.project.id}`}
+                              href={`/client/projects/${selectedConversation?.project?.id}`}
                               className="flex items-center space-x-1 bg-primary-500 text-white px-2 py-1 rounded-md text-sm hover:bg-primary-600 transition-colors duration-200 shadow-sm"
                             >
                               <Briefcase className="h-3 w-3" />
@@ -772,30 +823,30 @@ export default function MessagesPage() {
                       </div>
                       
                       {/* Project Summary Bar */}
-                      {selectedConversation.project && (
+                      {selectedConversation?.project && (
                         <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-dark-900">{selectedConversation.project.title}</span>
-                            <span className={`text-sm px-2 py-1 rounded-full ${getStatusColor(selectedConversation.project.status || 'active')}`}>
-                              {selectedConversation.project.status || 'active'}
+                            <span className="font-medium text-dark-900">{selectedConversation?.project?.title}</span>
+                            <span className={`text-sm px-2 py-1 rounded-full ${getStatusColor(selectedConversation?.project?.status || 'active')}`}>
+                              {selectedConversation?.project?.status || 'active'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                             <div className="flex items-center space-x-4">
                               <div className="flex items-center space-x-1">
                                 <DollarSign className="h-4 w-4" />
-                                <span>${selectedConversation.project.budget || 'N/A'}</span>
+                                <span>${selectedConversation?.project?.budget || 'N/A'}</span>
                               </div>
-                              {selectedConversation.project.location && (
+                              {selectedConversation?.project?.location && (
                                 <div className="flex items-center space-x-1">
                                   <MapPin className="h-4 w-4" />
-                                  <span>{selectedConversation.project.location}</span>
+                                  <span>{selectedConversation?.project?.location}</span>
                                 </div>
                               )}
                             </div>
-                            {selectedConversation.project.deadline && (
+                            {selectedConversation?.project?.deadline && (
                               <span className="text-sm">
-                                Due: {new Date(selectedConversation.project.deadline).toLocaleDateString()}
+                                Due: {new Date(selectedConversation?.project?.deadline).toLocaleDateString()}
                               </span>
                             )}
                           </div>
@@ -812,12 +863,12 @@ export default function MessagesPage() {
                       ) : (
                         messages.map((message) => {
                           const isMe = message.sender === currentUser?.id;
-                          const messageSender = selectedConversation.participants?.find(p => p.id === message.sender);
+                          const messageSender = message.sender === currentUser?.id ? currentUser : otherParticipant;
                           const senderName = formatUserName(messageSender);
                           const senderRole = formatUserRole(messageSender);
                           
                           return (
-                            <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                            <div key={`message-${message.id}`} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                               <div className={`max-w-xs lg:max-w-md ${isMe ? 'order-2' : 'order-1'}`}>
                                 {/* Sender info for non-me messages */}
                                 {!isMe && (
@@ -840,14 +891,18 @@ export default function MessagesPage() {
                                 {/* Message attachments */}
                                 {message.attachments && message.attachments.length > 0 && (
                                   <div className="mt-2 space-y-2">
-                                    {message.attachments.map((attachment) => (
-                                      <div key={attachment.id || attachment.file_url} className="rounded-lg overflow-hidden border border-gray-200">
+                                    {message.attachments.map((attachment, attachmentIndex) => (
+                                      <div key={`attachment-${message.id}-${attachmentIndex}`} className="rounded-lg overflow-hidden border border-gray-200">
                                         {attachment.file_type?.startsWith('image/') ? (
-                                          <img
-                                            src={attachment.file_url}
-                                            alt="Attachment"
-                                            className="w-full h-48 object-cover"
-                                          />
+                          <img
+                            src={attachment.file_url}
+                            alt="Attachment"
+                            className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/default-avatar.svg';
+                              e.currentTarget.className = 'w-full h-48 object-contain bg-gray-100';
+                            }}
+                          />
                                         ) : (
                                           <div className="p-3 bg-gray-50 flex items-center space-x-2">
                                             <Paperclip className="h-4 w-4 text-gray-500" />
@@ -911,7 +966,7 @@ export default function MessagesPage() {
                           </div>
                           <div className="space-y-2">
                             {fileUploads.map((upload, index) => (
-                              <div key={index} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                              <div key={`file-upload-${index}`} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
                                 <div className="flex items-center space-x-3">
                                   {upload.preview ? (
                                     <img src={upload.preview} alt="Preview" className="w-10 h-10 object-cover rounded-lg" />

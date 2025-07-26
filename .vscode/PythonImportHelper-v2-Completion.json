@@ -1564,12 +1564,52 @@
         "documentation": {}
     },
     {
+        "label": "User",
+        "importPath": "django.contrib.auth.models",
+        "description": "django.contrib.auth.models",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth.models",
+        "documentation": {}
+    },
+    {
         "label": "django.contrib.auth.validators",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "django.contrib.auth.validators",
         "description": "django.contrib.auth.validators",
         "detail": "django.contrib.auth.validators",
+        "documentation": {}
+    },
+    {
+        "label": "migrations",
+        "importPath": "django.db",
+        "description": "django.db",
+        "isExtraImport": true,
+        "detail": "django.db",
+        "documentation": {}
+    },
+    {
+        "label": "models",
+        "importPath": "django.db",
+        "description": "django.db",
+        "isExtraImport": true,
+        "detail": "django.db",
+        "documentation": {}
+    },
+    {
+        "label": "migrations",
+        "importPath": "django.db",
+        "description": "django.db",
+        "isExtraImport": true,
+        "detail": "django.db",
+        "documentation": {}
+    },
+    {
+        "label": "models",
+        "importPath": "django.db",
+        "description": "django.db",
+        "isExtraImport": true,
+        "detail": "django.db",
         "documentation": {}
     },
     {
@@ -2180,14 +2220,6 @@
         "isExtraImport": true,
         "importPath": "phonenumber_field.modelfields",
         "description": "phonenumber_field.modelfields",
-        "detail": "phonenumber_field.modelfields",
-        "documentation": {}
-    },
-    {
-        "label": "PhoneNumberField",
-        "importPath": "phonenumber_field.modelfields",
-        "description": "phonenumber_field.modelfields",
-        "isExtraImport": true,
         "detail": "phonenumber_field.modelfields",
         "documentation": {}
     },
@@ -5524,6 +5556,50 @@
         "documentation": {}
     },
     {
+        "label": "sqlite3",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sqlite3",
+        "description": "sqlite3",
+        "detail": "sqlite3",
+        "documentation": {}
+    },
+    {
+        "label": "UserProfile",
+        "importPath": "accounts.models",
+        "description": "accounts.models",
+        "isExtraImport": true,
+        "detail": "accounts.models",
+        "documentation": {}
+    },
+    {
+        "label": "hashlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hashlib",
+        "description": "hashlib",
+        "detail": "hashlib",
+        "documentation": {}
+    },
+    {
+        "label": "secrets",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "secrets",
+        "description": "secrets",
+        "detail": "secrets",
+        "documentation": {}
+    },
+    {
+        "label": "base64",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "base64",
+        "description": "base64",
+        "detail": "base64",
+        "documentation": {}
+    },
+    {
         "label": "_Known",
         "kind": 6,
         "importPath": "client.node_modules.flatted.python.flatted",
@@ -5920,15 +5996,6 @@
         "documentation": {}
     },
     {
-        "label": "CHANNEL_LAYERS",
-        "kind": 5,
-        "importPath": "server.alist_backend.settings",
-        "description": "server.alist_backend.settings",
-        "peekOfCode": "CHANNEL_LAYERS = {\n    'default': {\n        'BACKEND': 'channels.layers.InMemoryChannelLayer',\n    },\n}\n# For production, use Redis\nif os.environ.get('REDIS_URL'):\n    CHANNEL_LAYERS = {\n        'default': {\n            'BACKEND': 'channels_redis.core.RedisChannelLayer',",
-        "detail": "server.alist_backend.settings",
-        "documentation": {}
-    },
-    {
         "label": "CELERY_BROKER_URL",
         "kind": 5,
         "importPath": "server.alist_backend.settings",
@@ -6172,6 +6239,33 @@
         "documentation": {}
     },
     {
+        "label": "PHONENUMBER_DEFAULT_REGION",
+        "kind": 5,
+        "importPath": "server.alist_backend.settings",
+        "description": "server.alist_backend.settings",
+        "peekOfCode": "PHONENUMBER_DEFAULT_REGION = 'US'\nPHONENUMBER_DB_FORMAT = 'NATIONAL'\nPHONENUMBER_DEFAULT_FORMAT = 'NATIONAL'",
+        "detail": "server.alist_backend.settings",
+        "documentation": {}
+    },
+    {
+        "label": "PHONENUMBER_DB_FORMAT",
+        "kind": 5,
+        "importPath": "server.alist_backend.settings",
+        "description": "server.alist_backend.settings",
+        "peekOfCode": "PHONENUMBER_DB_FORMAT = 'NATIONAL'\nPHONENUMBER_DEFAULT_FORMAT = 'NATIONAL'",
+        "detail": "server.alist_backend.settings",
+        "documentation": {}
+    },
+    {
+        "label": "PHONENUMBER_DEFAULT_FORMAT",
+        "kind": 5,
+        "importPath": "server.alist_backend.settings",
+        "description": "server.alist_backend.settings",
+        "peekOfCode": "PHONENUMBER_DEFAULT_FORMAT = 'NATIONAL'",
+        "detail": "server.alist_backend.settings",
+        "documentation": {}
+    },
+    {
         "label": "urlpatterns",
         "kind": 5,
         "importPath": "server.alist_backend.urls",
@@ -6280,6 +6374,24 @@
         "documentation": {}
     },
     {
+        "label": "Migration",
+        "kind": 6,
+        "importPath": "server.authentication.migrations.0002_alter_user_phone",
+        "description": "server.authentication.migrations.0002_alter_user_phone",
+        "peekOfCode": "class Migration(migrations.Migration):\n    dependencies = [\n        ('authentication', '0001_initial'),\n    ]\n    operations = [\n        migrations.AlterField(\n            model_name='user',\n            name='phone',\n            field=models.CharField(blank=True, help_text='Phone number', max_length=20, null=True),\n        ),",
+        "detail": "server.authentication.migrations.0002_alter_user_phone",
+        "documentation": {}
+    },
+    {
+        "label": "Migration",
+        "kind": 6,
+        "importPath": "server.authentication.migrations.0003_alter_userprofile_emergency_contact_phone",
+        "description": "server.authentication.migrations.0003_alter_userprofile_emergency_contact_phone",
+        "peekOfCode": "class Migration(migrations.Migration):\n    dependencies = [\n        ('authentication', '0002_alter_user_phone'),\n    ]\n    operations = [\n        migrations.AlterField(\n            model_name='userprofile',\n            name='emergency_contact_phone',\n            field=models.CharField(blank=True, help_text='Emergency contact phone', max_length=20, null=True),\n        ),",
+        "detail": "server.authentication.migrations.0003_alter_userprofile_emergency_contact_phone",
+        "documentation": {}
+    },
+    {
         "label": "UserAdmin",
         "kind": 6,
         "importPath": "server.authentication.admin",
@@ -6383,7 +6495,7 @@
         "kind": 6,
         "importPath": "server.authentication.serializers",
         "description": "server.authentication.serializers",
-        "peekOfCode": "class UserDetailSerializer(serializers.ModelSerializer):\n    \"\"\"\n    Serializer لتفاصيل المستخدم الكاملة\n    \"\"\"\n    phone = PhoneNumberField(required=False)\n    profile = UserProfileSerializer(read_only=True)\n    verification_badges = serializers.SerializerMethodField()\n    completion_rate = serializers.SerializerMethodField()\n    class Meta:\n        model = User",
+        "peekOfCode": "class UserDetailSerializer(serializers.ModelSerializer):\n    \"\"\"\n    Serializer لتفاصيل المستخدم الكاملة\n    \"\"\"\n    phone = serializers.CharField(required=False, allow_blank=True, max_length=20)\n    profile = UserProfileSerializer(read_only=True)\n    verification_badges = serializers.SerializerMethodField()\n    completion_rate = serializers.SerializerMethodField()\n    class Meta:\n        model = User",
         "detail": "server.authentication.serializers",
         "documentation": {}
     },
@@ -6392,7 +6504,7 @@
         "kind": 6,
         "importPath": "server.authentication.serializers",
         "description": "server.authentication.serializers",
-        "peekOfCode": "class UserUpdateSerializer(serializers.ModelSerializer):\n    \"\"\"\n    Serializer لتحديث بيانات المستخدم\n    \"\"\"\n    phone = PhoneNumberField(required=False)\n    class Meta:\n        model = User\n        fields = (\n            'first_name',\n            'last_name',",
+        "peekOfCode": "class UserUpdateSerializer(serializers.ModelSerializer):\n    \"\"\"\n    Serializer لتحديث بيانات المستخدم\n    \"\"\"\n    phone = serializers.CharField(required=False, allow_blank=True, max_length=20)\n    class Meta:\n        model = User\n        fields = (\n            'first_name',\n            'last_name',",
         "detail": "server.authentication.serializers",
         "documentation": {}
     },
@@ -6969,6 +7081,24 @@
         "importPath": "server.calendar_app.views",
         "description": "server.calendar_app.views",
         "peekOfCode": "def set_professional_availability(request):\n    \"\"\"Set professional's availability\"\"\"\n    user = request.user\n    if user.user_type not in ['home_pro', 'specialist', 'crew_member']:\n        return Response(\n            {'error': 'Only professionals can set availability'}, \n            status=status.HTTP_403_FORBIDDEN\n        )\n    data = request.data\n    is_available = data.get('is_available')",
+        "detail": "server.calendar_app.views",
+        "documentation": {}
+    },
+    {
+        "label": "get_professional_availability",
+        "kind": 2,
+        "importPath": "server.calendar_app.views",
+        "description": "server.calendar_app.views",
+        "peekOfCode": "def get_professional_availability(request):\n    \"\"\"Get professional's weekly availability schedule\"\"\"\n    user = request.user\n    if user.user_type not in ['home_pro', 'specialist', 'crew_member']:\n        return Response(\n            {'error': 'Only professionals can access availability'}, \n            status=status.HTTP_403_FORBIDDEN\n        )\n    # Get all availability records for this professional\n    availability_records = ProfessionalAvailability.objects.filter(",
+        "detail": "server.calendar_app.views",
+        "documentation": {}
+    },
+    {
+        "label": "save_professional_availability",
+        "kind": 2,
+        "importPath": "server.calendar_app.views",
+        "description": "server.calendar_app.views",
+        "peekOfCode": "def save_professional_availability(request):\n    \"\"\"Save professional's weekly availability schedule\"\"\"\n    user = request.user\n    if user.user_type not in ['home_pro', 'specialist', 'crew_member']:\n        return Response(\n            {'error': 'Only professionals can set availability'}, \n            status=status.HTTP_403_FORBIDDEN\n        )\n    data = request.data\n    weekly_schedule = data.get('weekly_schedule', {})",
         "detail": "server.calendar_app.views",
         "documentation": {}
     },
@@ -8930,7 +9060,16 @@
         "kind": 6,
         "importPath": "server.messaging.serializers",
         "description": "server.messaging.serializers",
-        "peekOfCode": "class MessageSerializer(serializers.ModelSerializer):\n    \"\"\"Serializer للرسائل\"\"\"\n    sender = UserBasicSerializer(read_only=True)\n    is_read = serializers.SerializerMethodField()\n    attachments = MessageAttachmentSerializer(many=True, read_only=True, source='attachments.all')\n    reactions = MessageReactionSerializer(many=True, read_only=True, source='reactions.all')\n    reply_to = serializers.SerializerMethodField()\n    class Meta:\n        model = Message\n        fields = [",
+        "peekOfCode": "class MessageSerializer(serializers.ModelSerializer):\n    \"\"\"Serializer للرسائل\"\"\"\n    sender = UserBasicSerializer(read_only=True)\n    is_read = serializers.SerializerMethodField()\n    attachments = serializers.SerializerMethodField()\n    reactions = serializers.SerializerMethodField()\n    reply_to = serializers.SerializerMethodField()\n    class Meta:\n        model = Message\n        fields = [",
+        "detail": "server.messaging.serializers",
+        "documentation": {}
+    },
+    {
+        "label": "MessageResponseSerializer",
+        "kind": 6,
+        "importPath": "server.messaging.serializers",
+        "description": "server.messaging.serializers",
+        "peekOfCode": "class MessageResponseSerializer(serializers.ModelSerializer):\n    \"\"\"Serializer for message response after creation\"\"\"\n    sender = UserBasicSerializer(read_only=True)\n    is_read = serializers.SerializerMethodField()\n    attachments = serializers.SerializerMethodField()\n    reactions = serializers.SerializerMethodField()\n    reply_to = serializers.SerializerMethodField()\n    class Meta:\n        model = Message\n        fields = [",
         "detail": "server.messaging.serializers",
         "documentation": {}
     },
@@ -9128,7 +9267,7 @@
         "kind": 2,
         "importPath": "server.messaging.views",
         "description": "server.messaging.views",
-        "peekOfCode": "def start_conversation_with_user(request, user_id):\n    \"\"\"بدء محادثة مع مستخدم محدد\"\"\"\n    try:\n        recipient = User.objects.get(id=user_id)\n        if recipient == request.user:\n            return Response({\n                'error': 'Cannot start conversation with yourself'\n            }, status=status.HTTP_400_BAD_REQUEST)\n        # Check if conversation already exists\n        existing_conversation = Conversation.objects.filter(",
+        "peekOfCode": "def start_conversation_with_user(request, user_id):\n    \"\"\"بدء محادثة مع مستخدم محدد\"\"\"\n    try:\n        recipient = User.objects.get(id=user_id)\n        project_id = request.data.get('project_id')\n        if recipient == request.user:\n            return Response({\n                'error': 'Cannot start conversation with yourself'\n            }, status=status.HTTP_400_BAD_REQUEST)\n        # Check if conversation already exists for this project",
         "detail": "server.messaging.views",
         "documentation": {}
     },
@@ -12127,6 +12266,141 @@
         "description": "server.manage",
         "peekOfCode": "def main():\n    \"\"\"Run administrative tasks.\"\"\"\n    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alist_backend.settings')\n    try:\n        from django.core.management import execute_from_command_line\n    except ImportError as exc:\n        raise ImportError(\n            \"Couldn't import Django. Are you sure it's installed and \"\n            \"available on your PYTHONPATH environment variable? Did you \"\n            \"forget to activate a virtual environment?\"",
         "detail": "server.manage",
+        "documentation": {}
+    },
+    {
+        "label": "db_path",
+        "kind": 5,
+        "importPath": "check_db_tables",
+        "description": "check_db_tables",
+        "peekOfCode": "db_path = 'server/db.sqlite3'\nconn = sqlite3.connect(db_path)\ncursor = conn.cursor()\ntry:\n    # Get all tables\n    cursor.execute(\"SELECT name FROM sqlite_master WHERE type='table';\")\n    tables = cursor.fetchall()\n    print(\"All tables:\")\n    for table in tables:\n        print(f\"  - {table[0]}\")",
+        "detail": "check_db_tables",
+        "documentation": {}
+    },
+    {
+        "label": "conn",
+        "kind": 5,
+        "importPath": "check_db_tables",
+        "description": "check_db_tables",
+        "peekOfCode": "conn = sqlite3.connect(db_path)\ncursor = conn.cursor()\ntry:\n    # Get all tables\n    cursor.execute(\"SELECT name FROM sqlite_master WHERE type='table';\")\n    tables = cursor.fetchall()\n    print(\"All tables:\")\n    for table in tables:\n        print(f\"  - {table[0]}\")\n    print(\"\\nUser-related tables:\")",
+        "detail": "check_db_tables",
+        "documentation": {}
+    },
+    {
+        "label": "cursor",
+        "kind": 5,
+        "importPath": "check_db_tables",
+        "description": "check_db_tables",
+        "peekOfCode": "cursor = conn.cursor()\ntry:\n    # Get all tables\n    cursor.execute(\"SELECT name FROM sqlite_master WHERE type='table';\")\n    tables = cursor.fetchall()\n    print(\"All tables:\")\n    for table in tables:\n        print(f\"  - {table[0]}\")\n    print(\"\\nUser-related tables:\")\n    for table in tables:",
+        "detail": "check_db_tables",
+        "documentation": {}
+    },
+    {
+        "label": "email",
+        "kind": 5,
+        "importPath": "create_home_pro_user",
+        "description": "create_home_pro_user",
+        "peekOfCode": "email = 'testpro@test.com'\npassword = 'testpass123'\ntry:\n    # Check if user already exists\n    if User.objects.filter(email=email).exists():\n        user = User.objects.get(email=email)\n        print(f'User {email} already exists')\n    else:\n        # Create new user\n        user = User.objects.create_user(",
+        "detail": "create_home_pro_user",
+        "documentation": {}
+    },
+    {
+        "label": "password",
+        "kind": 5,
+        "importPath": "create_home_pro_user",
+        "description": "create_home_pro_user",
+        "peekOfCode": "password = 'testpass123'\ntry:\n    # Check if user already exists\n    if User.objects.filter(email=email).exists():\n        user = User.objects.get(email=email)\n        print(f'User {email} already exists')\n    else:\n        # Create new user\n        user = User.objects.create_user(\n            username=email,",
+        "detail": "create_home_pro_user",
+        "documentation": {}
+    },
+    {
+        "label": "db_path",
+        "kind": 5,
+        "importPath": "reset_password",
+        "description": "reset_password",
+        "peekOfCode": "db_path = 'server/db.sqlite3'\nconn = sqlite3.connect(db_path)\ncursor = conn.cursor()\n# Find the user\nemail = 'homepro1@test.com'\nnew_password = 'testpass123'\ntry:\n    # Get user info from users table\n    cursor.execute(\"SELECT id, username, user_type FROM users WHERE email = ?\", (email,))\n    user_result = cursor.fetchone()",
+        "detail": "reset_password",
+        "documentation": {}
+    },
+    {
+        "label": "conn",
+        "kind": 5,
+        "importPath": "reset_password",
+        "description": "reset_password",
+        "peekOfCode": "conn = sqlite3.connect(db_path)\ncursor = conn.cursor()\n# Find the user\nemail = 'homepro1@test.com'\nnew_password = 'testpass123'\ntry:\n    # Get user info from users table\n    cursor.execute(\"SELECT id, username, user_type FROM users WHERE email = ?\", (email,))\n    user_result = cursor.fetchone()\n    if user_result:",
+        "detail": "reset_password",
+        "documentation": {}
+    },
+    {
+        "label": "cursor",
+        "kind": 5,
+        "importPath": "reset_password",
+        "description": "reset_password",
+        "peekOfCode": "cursor = conn.cursor()\n# Find the user\nemail = 'homepro1@test.com'\nnew_password = 'testpass123'\ntry:\n    # Get user info from users table\n    cursor.execute(\"SELECT id, username, user_type FROM users WHERE email = ?\", (email,))\n    user_result = cursor.fetchone()\n    if user_result:\n        user_id, username, user_type = user_result",
+        "detail": "reset_password",
+        "documentation": {}
+    },
+    {
+        "label": "email",
+        "kind": 5,
+        "importPath": "reset_password",
+        "description": "reset_password",
+        "peekOfCode": "email = 'homepro1@test.com'\nnew_password = 'testpass123'\ntry:\n    # Get user info from users table\n    cursor.execute(\"SELECT id, username, user_type FROM users WHERE email = ?\", (email,))\n    user_result = cursor.fetchone()\n    if user_result:\n        user_id, username, user_type = user_result\n        print(f\"Found user: {username} (ID: {user_id})\")\n        print(f\"User type: {user_type}\")",
+        "detail": "reset_password",
+        "documentation": {}
+    },
+    {
+        "label": "new_password",
+        "kind": 5,
+        "importPath": "reset_password",
+        "description": "reset_password",
+        "peekOfCode": "new_password = 'testpass123'\ntry:\n    # Get user info from users table\n    cursor.execute(\"SELECT id, username, user_type FROM users WHERE email = ?\", (email,))\n    user_result = cursor.fetchone()\n    if user_result:\n        user_id, username, user_type = user_result\n        print(f\"Found user: {username} (ID: {user_id})\")\n        print(f\"User type: {user_type}\")\n        # Create a Django-compatible PBKDF2 hash",
+        "detail": "reset_password",
+        "documentation": {}
+    },
+    {
+        "label": "test_availability_api",
+        "kind": 2,
+        "importPath": "test_availability_api",
+        "description": "test_availability_api",
+        "peekOfCode": "def test_availability_api():\n    print(\"🔍 اختبار API الـ availability...\")\n    # 1. تسجيل الدخول\n    print(\"\\n1️⃣ تسجيل الدخول...\")\n    # Use the updated password\n    login_data = {\n        'email': 'homepro1@test.com',\n        'password': 'testpass123'\n    }\n    print(f\"Trying login with: {login_data['email']}\")",
+        "detail": "test_availability_api",
+        "documentation": {}
+    },
+    {
+        "label": "BASE_URL",
+        "kind": 5,
+        "importPath": "test_availability_api",
+        "description": "test_availability_api",
+        "peekOfCode": "BASE_URL = \"http://localhost:8000/api\"\nLOGIN_URL = f\"{BASE_URL}/auth/login/\"\nAVAILABILITY_GET_URL = f\"{BASE_URL}/calendar/availability/\"\nAVAILABILITY_SAVE_URL = f\"{BASE_URL}/calendar/availability/save/\"\ndef test_availability_api():\n    print(\"🔍 اختبار API الـ availability...\")\n    # 1. تسجيل الدخول\n    print(\"\\n1️⃣ تسجيل الدخول...\")\n    # Use the updated password\n    login_data = {",
+        "detail": "test_availability_api",
+        "documentation": {}
+    },
+    {
+        "label": "LOGIN_URL",
+        "kind": 5,
+        "importPath": "test_availability_api",
+        "description": "test_availability_api",
+        "peekOfCode": "LOGIN_URL = f\"{BASE_URL}/auth/login/\"\nAVAILABILITY_GET_URL = f\"{BASE_URL}/calendar/availability/\"\nAVAILABILITY_SAVE_URL = f\"{BASE_URL}/calendar/availability/save/\"\ndef test_availability_api():\n    print(\"🔍 اختبار API الـ availability...\")\n    # 1. تسجيل الدخول\n    print(\"\\n1️⃣ تسجيل الدخول...\")\n    # Use the updated password\n    login_data = {\n        'email': 'homepro1@test.com',",
+        "detail": "test_availability_api",
+        "documentation": {}
+    },
+    {
+        "label": "AVAILABILITY_GET_URL",
+        "kind": 5,
+        "importPath": "test_availability_api",
+        "description": "test_availability_api",
+        "peekOfCode": "AVAILABILITY_GET_URL = f\"{BASE_URL}/calendar/availability/\"\nAVAILABILITY_SAVE_URL = f\"{BASE_URL}/calendar/availability/save/\"\ndef test_availability_api():\n    print(\"🔍 اختبار API الـ availability...\")\n    # 1. تسجيل الدخول\n    print(\"\\n1️⃣ تسجيل الدخول...\")\n    # Use the updated password\n    login_data = {\n        'email': 'homepro1@test.com',\n        'password': 'testpass123'",
+        "detail": "test_availability_api",
+        "documentation": {}
+    },
+    {
+        "label": "AVAILABILITY_SAVE_URL",
+        "kind": 5,
+        "importPath": "test_availability_api",
+        "description": "test_availability_api",
+        "peekOfCode": "AVAILABILITY_SAVE_URL = f\"{BASE_URL}/calendar/availability/save/\"\ndef test_availability_api():\n    print(\"🔍 اختبار API الـ availability...\")\n    # 1. تسجيل الدخول\n    print(\"\\n1️⃣ تسجيل الدخول...\")\n    # Use the updated password\n    login_data = {\n        'email': 'homepro1@test.com',\n        'password': 'testpass123'\n    }",
+        "detail": "test_availability_api",
         "documentation": {}
     }
 ]

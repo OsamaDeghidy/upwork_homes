@@ -54,6 +54,7 @@ export interface Message {
 export interface Conversation {
   id: number;
   participants: User[];
+  other_participant?: User;
   project?: {
     id: number;
     title: string;
@@ -99,9 +100,10 @@ export const messagingService = {
   },
 
   // Start conversation with a specific user
-  async startConversationWithUser(userId: number, initialMessage?: string): Promise<Conversation> {
+  async startConversationWithUser(userId: number, initialMessage?: string, projectId?: number): Promise<Conversation> {
     const response = await api.post(`/messages/users/${userId}/start-conversation/`, {
-      initial_message: initialMessage
+      initial_message: initialMessage,
+      project_id: projectId
     });
     return response.data;
   },
