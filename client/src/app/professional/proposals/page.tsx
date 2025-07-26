@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { proposalsService, Proposal } from '@/lib/proposals';
+import { useAuthStore } from '@/lib/store';
 import { 
   Send, 
   Eye, 
@@ -23,108 +25,55 @@ import {
 } from 'lucide-react';
 
 export default function ProposalsPage() {
+  const { user, isAuthenticated, isLoading } = useAuthStore();
   const [selectedTab, setSelectedTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const proposals = [
-    {
-      id: 1,
-      title: 'Kitchen Renovation',
-      client: 'John Smith',
-      clientAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      description: 'Complete kitchen remodel with new cabinets, countertops, and appliances',
-      proposedAmount: '$8,500',
-      timeline: '6 weeks',
-      status: 'Pending',
-      submittedDate: '2024-01-20',
-      category: 'Kitchen Remodeling',
-      location: 'Los Angeles, CA',
-      clientBudget: '$8,000 - $12,000',
-      competitors: 5,
-      responseTime: '2 days left',
-      coverLetter: 'I have over 10 years of experience in kitchen renovations and would love to work on this project...',
-      attachments: ['portfolio.pdf', 'references.pdf']
-    },
-    {
-      id: 2,
-      title: 'Bathroom Plumbing Fix',
-      client: 'Sarah Johnson',
-      clientAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b647?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      description: 'Fix leaking pipes and replace old fixtures in master bathroom',
-      proposedAmount: '$1,200',
-      timeline: '3 days',
-      status: 'Accepted',
-      submittedDate: '2024-01-15',
-      category: 'Plumbing',
-      location: 'Beverly Hills, CA',
-      clientBudget: '$1,000 - $1,500',
-      competitors: 3,
-      responseTime: 'Accepted',
-      coverLetter: 'I\'m a licensed plumber with 15 years of experience. I can start immediately...',
-      attachments: ['license.pdf', 'insurance.pdf']
-    },
-    {
-      id: 3,
-      title: 'Deck Construction',
-      client: 'Mike Davis',
-      clientAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      description: 'Build a new wooden deck in the backyard, approximately 400 sq ft',
-      proposedAmount: '$4,200',
-      timeline: '2 weeks',
-      status: 'Rejected',
-      submittedDate: '2024-01-10',
-      category: 'Carpentry',
-      location: 'Santa Monica, CA',
-      clientBudget: '$3,500 - $5,000',
-      competitors: 8,
-      responseTime: 'Closed',
-      coverLetter: 'I specialize in outdoor decking and have built over 50 decks in the LA area...',
-      attachments: ['deck_portfolio.pdf']
-    },
-    {
-      id: 4,
-      title: 'Electrical Panel Upgrade',
-      client: 'Emma Wilson',
-      clientAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      description: 'Upgrade main electrical panel from 100A to 200A service',
-      proposedAmount: '$2,800',
-      timeline: '2 days',
-      status: 'Under Review',
-      submittedDate: '2024-01-18',
-      category: 'Electrical Work',
-      location: 'Pasadena, CA',
-      clientBudget: '$2,500 - $3,500',
-      competitors: 4,
-      responseTime: '5 days left',
-      coverLetter: 'As a licensed electrician, I can safely upgrade your electrical panel...',
-      attachments: ['electrical_license.pdf', 'recent_projects.pdf']
-    },
-    {
-      id: 5,
-      title: 'Roof Repair',
-      client: 'Robert Johnson',
-      clientAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      description: 'Repair damaged shingles and check for leaks after recent storm',
-      proposedAmount: '$1,800',
-      timeline: '1 week',
-      status: 'Withdrawn',
-      submittedDate: '2024-01-08',
-      category: 'Roofing',
-      location: 'Long Beach, CA',
-      clientBudget: '$1,500 - $2,500',
-      competitors: 6,
-      responseTime: 'Withdrawn',
-      coverLetter: 'I have 20 years of roofing experience and can handle all types of repairs...',
-      attachments: ['roofing_portfolio.pdf']
+  // Fetch proposals from backend
+  useEffect(() => {
+    const fetchProposals = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await proposalsService.getProfessionalProposals({
+          status: selectedTab === 'all' ? undefined : selectedTab,
+          search: searchQuery || undefined
+        });
+        
+        // Handle different response formats
+        if (Array.isArray(response)) {
+          setProposals(response);
+        } else if (response && Array.isArray(response.proposals)) {
+          setProposals(response.proposals);
+        } else {
+          setProposals([]);
+        }
+      } catch (err) {
+        console.error('Error fetching proposals:', err);
+        setError('فشل في تحميل العروض. تأكد من أن الخادم يعمل.');
+        setProposals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!isLoading && isAuthenticated && user) {
+      fetchProposals();
+    } else if (!isLoading && !isAuthenticated) {
+      setLoading(false);
     }
-  ];
+  }, [isAuthenticated, isLoading, user, selectedTab, searchQuery]);
 
   const tabs = [
     { id: 'all', label: 'All Proposals', count: proposals.length },
-    { id: 'pending', label: 'Pending', count: proposals.filter(p => p.status === 'Pending').length },
-    { id: 'accepted', label: 'Accepted', count: proposals.filter(p => p.status === 'Accepted').length },
-    { id: 'rejected', label: 'Rejected', count: proposals.filter(p => p.status === 'Rejected').length }
+    { id: 'pending', label: 'Pending', count: proposals.filter(p => p.status === 'pending').length },
+    { id: 'accepted', label: 'Accepted', count: proposals.filter(p => p.status === 'accepted').length },
+    { id: 'rejected', label: 'Rejected', count: proposals.filter(p => p.status === 'rejected').length },
+    { id: 'withdrawn', label: 'Withdrawn', count: proposals.filter(p => p.status === 'withdrawn').length }
   ];
 
   const stats = [
@@ -180,32 +129,55 @@ export default function ProposalsPage() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Pending':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'Accepted':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'Rejected':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'Under Review':
-        return <Eye className="h-4 w-4 text-blue-600" />;
-      case 'Withdrawn':
-        return <AlertCircle className="h-4 w-4 text-gray-600" />;
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'accepted':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'rejected':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'withdrawn':
+        return <XCircle className="w-4 h-4 text-gray-500" />;
+      case 'expired':
+        return <XCircle className="w-4 h-4 text-orange-500" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return <Clock className="w-4 h-4 text-gray-500" />;
     }
   };
 
   const filteredProposals = proposals.filter(proposal => {
-    const matchesSearch = proposal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         proposal.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         proposal.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
     const matchesTab = selectedTab === 'all' || proposal.status.toLowerCase() === selectedTab;
-    const matchesFilter = selectedFilter === 'all' || proposal.category.toLowerCase().includes(selectedFilter.toLowerCase());
+    const matchesSearch = proposal.cover_letter.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         proposal.professional?.display_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = selectedFilter === 'all';
     
-    return matchesSearch && matchesTab && matchesFilter;
+    return matchesTab && matchesSearch && matchesFilter;
   });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please log in</h1>
+          <p className="text-gray-600 mb-6">You need to be logged in to view your proposals.</p>
+          <Link href="/login" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+            Log In
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -309,143 +281,174 @@ export default function ProposalsPage() {
           </div>
         </div>
 
-        {/* Proposals List */}
-        <div className="space-y-6">
-          {filteredProposals.map((proposal) => (
-            <div
-              key={proposal.id}
-              className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200"
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading proposals...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-12 text-center">
+            <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
+            <h3 className="font-heading font-semibold text-xl text-dark-900 mb-2">
+              Error Loading Proposals
+            </h3>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors duration-200"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start space-x-4">
-                  <img
-                    src={proposal.clientAvatar}
-                    alt={proposal.client}
-                    className="w-14 h-14 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Proposals List */}
+        {!loading && !error && (
+          <div className="space-y-6">
+            {filteredProposals.map((proposal) => (
+              <div
+                key={proposal.id}
+                className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start space-x-4">
+                    <img
+                      src={proposal.professional?.avatar || '/default-avatar.png'}
+                      alt={proposal.professional?.display_name || 'Professional'}
+                      className="w-14 h-14 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="font-heading font-semibold text-xl text-dark-900">
+                          Project #{proposal.project}
+                        </h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
+                          {proposal.status}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-2">Professional: {proposal.professional?.display_name}</p>
+                      <p className="text-gray-600 text-sm line-clamp-2">{proposal.cover_letter}</p>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <div className="flex items-center space-x-1 text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          <span className="text-sm">{proposal.professional?.location || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-gray-600">
+                          <Calendar className="h-4 w-4" />
+                          <span className="text-sm">Submitted: {new Date(proposal.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-heading font-semibold text-xl text-dark-900">
-                        {proposal.title}
-                      </h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(proposal.status)}`}>
-                        {proposal.status}
-                      </span>
+                      {getStatusIcon(proposal.status)}
+                      <span className="text-sm text-gray-600">{proposal.response_time}</span>
                     </div>
-                    <p className="text-gray-600 mb-2">Client: {proposal.client}</p>
-                    <p className="text-gray-600 text-sm line-clamp-2">{proposal.description}</p>
-                    <div className="flex items-center space-x-4 mt-2">
-                      <div className="flex items-center space-x-1 text-gray-600">
-                        <MapPin className="h-4 w-4" />
-                        <span className="text-sm">{proposal.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-gray-600">
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm">{proposal.category}</span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-gray-600">
-                        <Calendar className="h-4 w-4" />
-                        <span className="text-sm">Submitted: {proposal.submittedDate}</span>
-                      </div>
+                    <div className="text-2xl font-bold text-dark-900 mb-1">
+                      ${proposal.amount} {proposal.currency || 'USD'}
                     </div>
+                    <div className="text-sm text-gray-600">{proposal.timeline}</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center space-x-2 mb-2">
-                    {getStatusIcon(proposal.status)}
-                    <span className="text-sm text-gray-600">{proposal.responseTime}</span>
-                  </div>
-                  <div className="text-2xl font-bold text-dark-900 mb-1">
-                    {proposal.proposedAmount}
-                  </div>
-                  <div className="text-sm text-gray-600">{proposal.timeline}</div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                <div>
-                  <h4 className="font-semibold text-dark-900 mb-2">Proposal Details</h4>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Client Budget:</span>
-                      <span className="font-medium">{proposal.clientBudget}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <div>
+                    <h4 className="font-semibold text-dark-900 mb-2">Proposal Details</h4>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Amount:</span>
+                        <span className="font-medium">${proposal.amount} {proposal.currency || 'USD'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Timeline:</span>
+                        <span className="font-medium">{proposal.timeline}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Priority:</span>
+                        <span className="font-medium capitalize">{proposal.priority}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Views:</span>
+                        <span className="font-medium">{proposal.views_count || 0}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Competitors:</span>
-                      <span className="font-medium">{proposal.competitors} proposals</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Timeline:</span>
-                      <span className="font-medium">{proposal.timeline}</span>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-dark-900 mb-2">Attachments</h4>
+                    <div className="space-y-1">
+                      {proposal.attachments && proposal.attachments.length > 0 ? (
+                        proposal.attachments.map((attachment) => (
+                          <div key={attachment.id} className="flex items-center space-x-2 text-sm">
+                            <FileText className="h-4 w-4 text-gray-400" />
+                            <span className="text-gray-600">{attachment.name}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-sm">No attachments</p>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="font-semibold text-dark-900 mb-2">Attachments</h4>
-                  <div className="space-y-1">
-                    {proposal.attachments.map((attachment, index) => (
-                      <div key={index} className="flex items-center space-x-2 text-sm">
-                        <FileText className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">{attachment}</span>
-                      </div>
-                    ))}
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="font-semibold text-dark-900 mb-2">Cover Letter</h4>
+                  <p className="text-gray-600 text-sm line-clamp-3">{proposal.cover_letter}</p>
+                </div>
+
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">Status:</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(proposal.status)}`}>
+                      {proposal.status}
+                    </span>
                   </div>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-200 pt-4">
-                <h4 className="font-semibold text-dark-900 mb-2">Cover Letter</h4>
-                <p className="text-gray-600 text-sm line-clamp-2">{proposal.coverLetter}</p>
-              </div>
-
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Status:</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(proposal.status)}`}>
-                    {proposal.status}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Link
-                    href={`/professional/proposals/${proposal.id}`}
-                    className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors duration-200"
-                  >
-                    View Details
-                  </Link>
-                  {proposal.status === 'Pending' && (
-                    <>
-                      <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200">
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                  {proposal.status === 'Accepted' && (
+                  <div className="flex items-center space-x-2">
                     <Link
-                      href={`/messages?client=${proposal.client}`}
-                      className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
+                      href={`/professional/proposals/${proposal.id}`}
+                      className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors duration-200"
                     >
-                      <MessageCircle className="h-4 w-4" />
+                      View Details
                     </Link>
-                  )}
+                    {proposal.status === 'pending' && (
+                      <>
+                        <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                    {proposal.status === 'accepted' && (
+                      <Link
+                        href={`/messages?professional=${proposal.professional?.id}`}
+                        className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors duration-200"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* No Proposals Found */}
-        {filteredProposals.length === 0 && (
+        {!loading && !error && proposals.length === 0 && (
           <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-12 text-center">
             <Send className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="font-heading font-semibold text-xl text-dark-900 mb-2">
               No proposals found
             </h3>
             <p className="text-gray-600 mb-6">
-              Try adjusting your filters or search query to find proposals.
+              You haven't submitted any proposals yet.
             </p>
             <Link
               href="/find-work"
@@ -458,4 +461,4 @@ export default function ProposalsPage() {
       </div>
     </div>
   );
-} 
+}

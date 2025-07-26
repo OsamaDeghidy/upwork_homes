@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Q
 from datetime import datetime, timedelta
 from .models import Proposal, ProposalMilestone
 from .serializers import (
@@ -399,6 +400,62 @@ def reject_proposal(request, proposal_id):
         proposal.save()
         
         return Response({'message': 'Proposal rejected successfully'})
+    except Exception as e:
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def professional_proposals(request):
+    """Get all proposals for the authenticated professional"""
+    try:
+        # Check if user is a professional
+        if not request.user.is_professional():
+            return Response(
+                {'error': 'User is not a professional'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get all proposals for this professional
+        proposals = Proposal.objects.filter(
+            professional=request.user
+        ).select_related(
+            'project', 
+            'project__client', 
+            'project__category'
+        ).prefetch_related(
+            'milestones',
+            'attachments_files'
+        ).order_by('-created_at')
+        
+        # Apply filters if provided
+        status_filter = request.GET.get('status')
+        if status_filter:
+            proposals = proposals.filter(status=status_filter)
+        
+        priority_filter = request.GET.get('priority')
+        if priority_filter:
+            proposals = proposals.filter(priority=priority_filter)
+        
+        search_query = request.GET.get('search')
+        if search_query:
+            proposals = proposals.filter(
+                Q(project__title__icontains=search_query) |
+                Q(project__description__icontains=search_query) |
+                Q(cover_letter__icontains=search_query)
+            )
+        
+        # Serialize the proposals
+        serializer = ProposalListSerializer(proposals, many=True)
+        
+        return Response({
+            'proposals': serializer.data,
+            'count': proposals.count()
+        })
+        
     except Exception as e:
         return Response(
             {'error': str(e)}, 

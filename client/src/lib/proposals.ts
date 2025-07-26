@@ -113,5 +113,20 @@ export const proposalsService = {
   async createContractFromProposal(proposalId: string): Promise<any> {
     const response = await api.post(`/proposals/${proposalId}/create-contract/`);
     return response.data;
+  },
+
+  // Get proposals for authenticated professional
+  async getProfessionalProposals(params?: {
+    status?: string;
+    priority?: string;
+    search?: string;
+  }): Promise<{ proposals: Proposal[]; count: number }> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.priority) searchParams.append('priority', params.priority);
+    if (params?.search) searchParams.append('search', params.search);
+    
+    const response = await api.get(`/proposals/professional/?${searchParams.toString()}`);
+    return response.data;
   }
 };

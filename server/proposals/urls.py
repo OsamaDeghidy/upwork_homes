@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     proposal_list, project_proposals, create_proposal,
     proposal_detail, accept_proposal, reject_proposal,
-    create_contract_from_proposal_custom
+    create_contract_from_proposal_custom, professional_proposals
 )
 
 urlpatterns = [
@@ -16,4 +16,5 @@ urlpatterns = [
     
     # Project-specific proposals
     path('project/<int:project_id>/', project_proposals, name='project-proposals'),
-] 
+    path('professional/', professional_proposals, name='professional-proposals'),
+]

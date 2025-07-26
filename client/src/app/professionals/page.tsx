@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Star, CheckCircle, Heart, Filter, DollarSign, Clock, Award, Mail, Map, Grid3x3 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, MapPin, Star, CheckCircle, Heart, Filter, DollarSign, Clock, Award, Mail, Map, Grid3x3, Loader2 } from 'lucide-react';
+import { useProfessionals } from '../../hooks/useProfessionals';
+import { Professional, ProfessionalsFilters } from '../../services/professionalsApi';
+import { messagingService } from '../../lib/messaging';
 
 export default function ProfessionalsPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -13,6 +18,75 @@ export default function ProfessionalsPage() {
   const [selectedRole, setSelectedRole] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
+  const [selectedSort, setSelectedSort] = useState('-rating_average');
+  const [contactingProfessional, setContactingProfessional] = useState<number | null>(null);
+  
+  // Quick filters state
+  const [filters, setFilters] = useState({
+    online: false,
+    licensed: false
+  });
+  
+  const { professionals, loading, error, totalCount, fetchProfessionals } = useProfessionals();
+
+  // Handle contact button click
+  const handleContactProfessional = async (professionalId: number) => {
+    try {
+      setContactingProfessional(professionalId);
+      
+      // Start conversation with the professional
+      const conversation = await messagingService.startConversationWithUser(
+        professionalId,
+        'مرحباً، أود التحدث معك حول خدماتك.'
+      );
+      
+      // Redirect to messages page with the new conversation
+      router.push(`/messages?conversation=${conversation.id}`);
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      // You might want to show an error toast here
+    } finally {
+      setContactingProfessional(null);
+    }
+  };
+  
+  // Fetch professionals when form values change
+  useEffect(() => {
+    const newFilters: ProfessionalsFilters = {
+      search: searchQuery || undefined,
+      location: selectedLocation || undefined,
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      is_verified: filters.licensed || undefined,
+      is_available: filters.online || undefined,
+      ordering: selectedSort,
+    };
+    
+    // Handle rating filter
+    if (selectedRating !== 'all') {
+      if (selectedRating === '5 Stars') newFilters.min_rating = 5;
+      else if (selectedRating === '4+ Stars') newFilters.min_rating = 4;
+      else if (selectedRating === '3+ Stars') newFilters.min_rating = 3;
+    }
+    
+    // Handle budget filter
+    if (selectedBudget !== 'all') {
+      if (selectedBudget === 'Under $50/hr') newFilters.max_hourly_rate = 50;
+      else if (selectedBudget === '$50-75/hr') { newFilters.min_hourly_rate = 50; newFilters.max_hourly_rate = 75; }
+      else if (selectedBudget === '$75-100/hr') { newFilters.min_hourly_rate = 75; newFilters.max_hourly_rate = 100; }
+      else if (selectedBudget === '$100-150/hr') { newFilters.min_hourly_rate = 100; newFilters.max_hourly_rate = 150; }
+      else if (selectedBudget === '$150-200/hr') { newFilters.min_hourly_rate = 150; newFilters.max_hourly_rate = 200; }
+      else if (selectedBudget === '$200+/hr') newFilters.min_hourly_rate = 200;
+    }
+    
+    // Handle role filter
+    if (selectedRole !== 'all') {
+      if (selectedRole === 'Home Pro') newFilters.user_type = 'home_pro';
+      else if (selectedRole === 'A-List Specialist') newFilters.user_type = 'specialist';
+      else if (selectedRole === 'Crew Member') newFilters.user_type = 'crew_member';
+    }
+    
+    fetchProfessionals(newFilters);
+  }, [searchQuery, selectedLocation, selectedCategory, selectedRating, selectedBudget, selectedRole, filters.licensed, filters.online, selectedSort, fetchProfessionals]);
 
   const categories = [
     'All Categories',
@@ -53,16 +127,13 @@ export default function ProfessionalsPage() {
   ];
 
   const sortOptions = [
-    { value: 'rating', label: 'Highest Rated' },
-    { value: 'reviews', label: 'Most Reviews' },
-    { value: 'price-low', label: 'Lowest Rate' },
-    { value: 'price-high', label: 'Highest Rate' },
-    { value: 'response', label: 'Fastest Response' },
-    { value: 'recent', label: 'Recently Active' },
-    { value: 'projects', label: 'Most Projects' }
+    { value: '-rating_average', label: 'Highest Rated' },
+    { value: '-rating_count', label: 'Most Reviews' },
+    { value: 'hourly_rate', label: 'Lowest Rate' },
+    { value: '-hourly_rate', label: 'Highest Rate' },
+    { value: '-projects_completed', label: 'Most Projects' },
+    { value: '-created_at', label: 'Recently Joined' }
   ];
-
-  const [selectedSort, setSelectedSort] = useState('rating');
 
   const clearAllFilters = () => {
     setSelectedCategory('all');
@@ -71,167 +142,27 @@ export default function ProfessionalsPage() {
     setSelectedRole('all');
     setSearchQuery('');
     setSelectedLocation('');
+    setFilters({
+      online: false,
+      licensed: false,
+    });
+    setSelectedSort('-rating_average');
   };
 
-  // Sample professionals data
-  const professionals = [
-    {
-      id: 1,
-      name: "Sarah Mitchell",
-      title: "Kitchen Designer & Contractor",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b647?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-      rating: 4.9,
-      reviews: 127,
-      hourlyRate: "$85",
-      location: "Los Angeles, CA",
-      category: "Kitchen Remodeling",
-      role: "Home Pro",
-      verified: true,
-      topRated: true,
-      online: true,
-      responseTime: "2 hours",
-      completedProjects: 45,
-      successRate: 98,
-      description: "Experienced kitchen designer with 8+ years specializing in modern renovations. Licensed contractor with expertise in custom cabinetry and high-end finishes.",
-      skills: ["Custom Cabinetry", "Modern Design", "Project Management", "3D Rendering"],
-      portfolio: [
-        "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-        "https://images.unsplash.com/photo-1565538810643-b5bdb714032a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-        "https://images.unsplash.com/photo-1556909114-8c9b3e3d9e9a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-      ],
-      badges: ["Top Rated", "Licensed", "Insured"],
-      languages: ["English", "Spanish"]
-    },
-    {
-      id: 2,
-      name: "David Rodriguez",
-      title: "Master Electrician",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-      rating: 5.0,
-      reviews: 89,
-      hourlyRate: "$95",
-      location: "Miami, FL",
-      category: "Electrical Work",
-      role: "Home Pro",
-      verified: true,
-      topRated: true,
-      online: false,
-      responseTime: "1 hour",
-      completedProjects: 67,
-      successRate: 100,
-      description: "Licensed master electrician with 12 years of experience. Specializing in residential upgrades, smart home installations, and electrical panel updates.",
-      skills: ["Panel Upgrades", "Smart Home", "Code Compliance", "Emergency Service"],
-      portfolio: [
-        "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-      ],
-      badges: ["Master Licensed", "Insured", "Emergency Service"],
-      languages: ["English", "Spanish"]
-    },
-    {
-      id: 3,
-      name: "Maria Santos",
-      title: "Interior Designer",
-      avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-      rating: 4.8,
-      reviews: 156,
-      hourlyRate: "$75",
-      location: "Chicago, IL",
-      category: "Interior Design",
-      role: "A-List Specialist",
-      verified: true,
-      topRated: false,
-      online: true,
-      responseTime: "3 hours",
-      completedProjects: 78,
-      successRate: 96,
-      description: "Creative interior designer with a passion for transforming spaces. Specializing in modern and contemporary designs with sustainable materials.",
-      skills: ["Space Planning", "Color Consultation", "Sustainable Design", "Furniture Selection"],
-      portfolio: [
-        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-      ],
-      badges: ["Verified", "Eco-Friendly"],
-      languages: ["English", "Spanish", "Portuguese"]
-    },
-    {
-      id: 4,
-      name: "James Wilson",
-      title: "Plumbing Expert",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-      rating: 4.9,
-      reviews: 203,
-      hourlyRate: "$88",
-      location: "Phoenix, AZ",
-      category: "Plumbing",
-      role: "Home Pro",
-      verified: true,
-      topRated: true,
-      online: true,
-      responseTime: "1 hour",
-      completedProjects: 112,
-      successRate: 99,
-      description: "Professional plumber with 15+ years of experience. Licensed and bonded, specializing in bathroom renovations and water heater installations.",
-      skills: ["Bathroom Renovations", "Water Heaters", "Pipe Repair", "Emergency Service"],
-      portfolio: [
-        "https://images.unsplash.com/photo-1620626011761-996317b8d101?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-        "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-      ],
-      badges: ["Licensed", "Bonded", "24/7 Service"],
-      languages: ["English"]
-    },
-    {
-      id: 5,
-      name: "Emily Chen",
-      title: "Landscape Designer",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-      rating: 4.7,
-      reviews: 92,
-      hourlyRate: "$70",
-      location: "Denver, CO",
-      category: "Landscaping",
-      role: "A-List Specialist",
-      verified: true,
-      topRated: false,
-      online: false,
-      responseTime: "4 hours",
-      completedProjects: 56,
-      successRate: 95,
-      description: "Certified landscape designer with expertise in sustainable gardening and outdoor living spaces. Creating beautiful, eco-friendly landscapes.",
-      skills: ["Garden Design", "Irrigation Systems", "Native Plants", "Outdoor Living"],
-      portfolio: [
-        "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-        "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-      ],
-      badges: ["Certified", "Eco-Friendly"],
-      languages: ["English", "Mandarin"]
-    },
-    {
-      id: 6,
-      name: "Robert Kim",
-      title: "Roofing Contractor",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80",
-      rating: 4.8,
-      reviews: 134,
-      hourlyRate: "$92",
-      location: "Seattle, WA",
-      category: "Roofing",
-      role: "Crew Member",
-      verified: true,
-      topRated: true,
-      online: true,
-      responseTime: "2 hours",
-      completedProjects: 89,
-      successRate: 97,
-      description: "Licensed roofing contractor with 20+ years of experience. Specializing in residential roofing, repairs, and storm damage restoration.",
-      skills: ["Roof Installation", "Storm Damage", "Gutter Systems", "Skylight Installation"],
-      portfolio: [
-        "https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
-      ],
-      badges: ["Licensed", "Insured", "Storm Certified"],
-      languages: ["English", "Korean"]
+  // Handle quick filter changes
+  const handleQuickFilterChange = (filterType: string, checked: boolean) => {
+    if (filterType === 'online') {
+      setFilters(prev => ({
+        ...prev,
+        online: checked
+      }));
+    } else if (filterType === 'licensed') {
+      setFilters(prev => ({
+        ...prev,
+        licensed: checked
+      }));
     }
-  ];
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -407,16 +338,14 @@ export default function ProfessionalsPage() {
                     <label className="block text-sm font-medium text-dark-700 mb-3">Quick Filters</label>
                     <div className="space-y-2">
                       {[
-                        { id: 'top-rated', label: 'Top Rated Only', icon: '⭐' },
-                        { id: 'online', label: 'Currently Online', icon: '🟢' },
-                        { id: 'fast-response', label: 'Fast Response (< 2hrs)', icon: '⚡' },
-                        { id: 'licensed', label: 'Licensed & Insured', icon: '🛡️' },
-                        { id: 'emergency', label: 'Emergency Service', icon: '🚨' },
-                        { id: 'eco-friendly', label: 'Eco-Friendly', icon: '🌱' }
+                        { id: 'online', label: 'Currently Available', icon: '🟢' },
+                        { id: 'licensed', label: 'Verified & Licensed', icon: '🛡️' },
                       ].map((filter) => (
                         <label key={filter.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                           <input 
                             type="checkbox" 
+                            checked={filters[filter.id as keyof typeof filters] as boolean}
+                            onChange={(e) => handleQuickFilterChange(filter.id, e.target.checked)}
                             className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500" 
                           />
                           <span className="text-sm">{filter.icon}</span>
@@ -465,7 +394,9 @@ export default function ProfessionalsPage() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="font-heading font-semibold text-2xl text-dark-900">Available Professionals</h2>
-                  <p className="text-dark-600 mt-1">{professionals.length} professionals found</p>
+                  <p className="text-dark-600 mt-1">
+                    {loading ? 'Loading...' : `${totalCount || 0} professionals found`}
+                  </p>
                 </div>
                 <div className="flex items-center space-x-4">
                   {/* View Mode Toggle */}
@@ -494,7 +425,10 @@ export default function ProfessionalsPage() {
                   
                   <select 
                     value={selectedSort}
-                    onChange={(e) => setSelectedSort(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedSort(e.target.value);
+                      setFilters(prev => ({ ...prev, ordering: e.target.value }));
+                    }}
                     className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     {sortOptions.map((option) => (
@@ -538,66 +472,89 @@ export default function ProfessionalsPage() {
                 </div>
               )}
 
+              {/* Loading State */}
+              {loading && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+                  <span className="ml-2 text-dark-600">Loading professionals...</span>
+                </div>
+              )}
+
+              {/* Error State */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                  <p className="text-red-600">Error loading professionals: {error}</p>
+                  <button 
+                    onClick={() => fetchProfessionals(filters)}
+                    className="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors duration-200"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+
               {/* Grid View */}
-              {viewMode === 'grid' && (
+              {viewMode === 'grid' && !loading && !error && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {professionals.map((pro) => (
                     <div key={pro.id} className="bg-white rounded-2xl shadow-upwork hover:shadow-upwork-lg transition-all duration-300 border border-gray-200 overflow-hidden group">
                       <div className="p-6">
                         {/* Header */}
                         <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center space-x-4">
-                            <div className="relative">
+                          <div className="flex items-center space-x-4 min-w-0 flex-1">
+                            <div className="relative flex-shrink-0">
                               <img
-                                src={pro.avatar}
-                                alt={pro.name}
+                                src={pro.avatar || '/default-avatar.png'}
+                                alt={pro.full_name}
                                 className="w-16 h-16 rounded-xl object-cover"
                               />
-                              {pro.online && (
+                              {pro.is_available && (
                                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 border-2 border-white rounded-full"></div>
                               )}
                             </div>
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center space-x-2">
-                                <h3 className="font-heading font-semibold text-lg text-dark-900 group-hover:text-primary-600 transition-colors duration-200">
+                                <h3 className="font-heading font-semibold text-lg text-dark-900 group-hover:text-primary-600 transition-colors duration-200 truncate">
                                   <Link href={`/professionals/${pro.id}`}>
-                                    {pro.name}
+                                    {pro.display_name}
                                   </Link>
                                 </h3>
-                                {pro.verified && (
-                                  <CheckCircle className="h-5 w-5 text-green-500" />
-                                )}
-                                {pro.topRated && (
-                                  <Award className="h-5 w-5 text-yellow-500" />
-                                )}
+                                <div className="flex items-center space-x-1 flex-shrink-0">
+                                  {pro.is_verified && (
+                                    <CheckCircle className="h-5 w-5 text-green-500" />
+                                  )}
+                                  {pro.rating_average >= 4.5 && (
+                                    <Award className="h-5 w-5 text-yellow-500" />
+                                  )}
+                                </div>
                               </div>
-                              <p className="text-dark-600 font-medium">{pro.title}</p>
-                              <div className="flex items-center space-x-2 mt-1">
+                              <p className="text-dark-600 font-medium truncate">{pro.company_name || pro.user_type.replace('_', ' ').toUpperCase()}</p>
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
                                 <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded-full text-xs font-medium">
-                                  {pro.role}
+                                  {pro.user_type.replace('_', ' ').toUpperCase()}
                                 </span>
                                 <div className="flex items-center space-x-1">
                                   <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                  <span className="text-sm font-medium text-dark-900">{pro.rating}</span>
-                                  <span className="text-sm text-dark-600">({pro.reviews} reviews)</span>
+                                  <span className="text-sm font-medium text-dark-900">{typeof pro.rating_average === 'number' ? pro.rating_average.toFixed(1) : '0.0'}</span>
+                                  <span className="text-sm text-dark-600">({pro.rating_count || 0} reviews)</span>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          <button className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200">
+                          <button className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200 flex-shrink-0">
                             <Heart className="h-5 w-5" />
                           </button>
                         </div>
 
                         {/* Description */}
-                        <p className="text-dark-600 leading-relaxed mb-4">
-                          {pro.description}
+                        <p className="text-dark-600 leading-relaxed mb-4 line-clamp-3">
+                          {pro.bio || 'Professional service provider'}
                         </p>
 
                         {/* Skills */}
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {pro.skills.slice(0, 4).map((skill, index) => (
-                            <span key={index} className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-xs font-medium">
+                          {pro.skills?.slice(0, 4).map((skill, index) => (
+                            <span key={index} className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-xs font-medium truncate max-w-[120px]">
                               {skill}
                             </span>
                           ))}
@@ -606,25 +563,25 @@ export default function ProfessionalsPage() {
                         {/* Stats */}
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div className="text-center bg-gray-50 rounded-lg p-3">
-                            <div className="text-lg font-bold text-dark-900">{pro.completedProjects}</div>
+                            <div className="text-lg font-bold text-dark-900">{pro.projects_completed || 0}</div>
                             <div className="text-xs text-dark-600">Projects</div>
                           </div>
                           <div className="text-center bg-gray-50 rounded-lg p-3">
-                            <div className="text-lg font-bold text-dark-900">{pro.successRate}%</div>
-                            <div className="text-xs text-dark-600">Success Rate</div>
+                            <div className="text-lg font-bold text-dark-900">{pro.completion_rate || 0}%</div>
+                            <div className="text-xs text-dark-600">Completion Rate</div>
                           </div>
                         </div>
 
                         {/* Portfolio Preview */}
-                        {pro.portfolio.length > 0 && (
+                        {pro.portfolio_images && pro.portfolio_images.length > 0 && (
                           <div className="mb-4">
                             <h4 className="text-sm font-medium text-dark-900 mb-2">Recent Work</h4>
                             <div className="flex space-x-2">
-                              {pro.portfolio.slice(0, 3).map((image, index) => (
+                              {pro.portfolio_images.slice(0, 3).map((image, index) => (
                                 <img
                                   key={index}
                                   src={image}
-                                  alt={`Work by ${pro.name}`}
+                                  alt={`Work by ${pro.display_name}`}
                                   className="w-16 h-16 object-cover rounded-lg"
                                 />
                               ))}
@@ -634,40 +591,68 @@ export default function ProfessionalsPage() {
 
                         {/* Badges */}
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {pro.badges.map((badge, index) => (
-                            <span key={index} className="bg-accent-50 text-accent-700 px-2 py-1 rounded-full text-xs font-medium">
+                          {pro.verification_badges?.map((badge, index) => (
+                            <span key={index} className="bg-accent-50 text-accent-700 px-2 py-1 rounded-full text-xs font-medium truncate max-w-[100px]">
                               {badge}
                             </span>
                           ))}
+                          {pro.is_verified && (
+                            <span className="bg-green-50 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                              Verified
+                            </span>
+                          )}
+                          {pro.insurance_verified && (
+                            <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
+                              Insured
+                            </span>
+                          )}
+                          {pro.background_check_verified && (
+                            <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">
+                              Background Checked
+                            </span>
+                          )}
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                          <div className="flex items-center space-x-4 text-sm text-dark-600">
+                        <div className="pt-4 border-t border-gray-100 space-y-3">
+                          {/* Professional Info */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-dark-600">
                             <div className="flex items-center">
-                              <DollarSign className="h-4 w-4 mr-1" />
-                              <span className="font-medium">{pro.hourlyRate}/hr</span>
+                              <DollarSign className="h-4 w-4 mr-1 flex-shrink-0" />
+                              <span className="font-medium truncate">${pro.hourly_rate || 'N/A'}/hr</span>
                             </div>
                             <div className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
-                              <span>{pro.responseTime}</span>
+                              <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
+                              <span className="truncate">{pro.response_time}</span>
                             </div>
                             <div className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-1" />
-                              <span>{pro.location}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <button className="p-2 text-gray-600 hover:text-primary-600 border border-gray-300 rounded-lg transition-colors duration-200">
-                              <Mail className="h-4 w-4" />
-                            </button>
-                            <Link
-                              href={`/professionals/${pro.id}`}
-                              className="bg-primary-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors duration-200"
-                            >
-                              View Profile
-                            </Link>
-                          </div>
+                               <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
+                               <span className="truncate">{pro.location || 'Location not specified'}</span>
+                             </div>
+                           </div>
+                           {/* Action Buttons */}
+                           <div className="flex flex-col sm:flex-row gap-2">
+                             <button 
+                               onClick={() => handleContactProfessional(pro.id)}
+                               disabled={contactingProfessional === pro.id}
+                               className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                             >
+                               {contactingProfessional === pro.id ? (
+                                 <>
+                                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                   جاري الاتصال...
+                                 </>
+                               ) : (
+                                 'Contact'
+                               )}
+                             </button>
+                             <Link 
+                               href={`/professionals/${pro.id}`}
+                               className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-dark-700 hover:bg-gray-50 transition-colors duration-200 text-center inline-block"
+                             >
+                               View Profile
+                             </Link>
+                           </div>
                         </div>
                       </div>
                     </div>
@@ -689,4 +674,4 @@ export default function ProfessionalsPage() {
       </section>
     </div>
   );
-} 
+}

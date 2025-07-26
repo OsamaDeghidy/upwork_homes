@@ -302,27 +302,92 @@ class UserListView(generics.ListAPIView):
 
 class ProfessionalListView(generics.ListAPIView):
     """
-    Professionals List
+    Professionals List with Advanced Filtering
     """
     serializer_class = ProfessionalListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['user_type', 'is_verified', 'location', 'is_available']
-    search_fields = ['first_name', 'last_name', 'company_name', 'skills', 'specialization']
-    ordering_fields = ['rating_average', 'hourly_rate', 'projects_completed']
+    search_fields = ['first_name', 'last_name', 'company_name', 'skills', 'bio']
+    ordering_fields = ['rating_average', 'hourly_rate', 'projects_completed', 'created_at']
     ordering = ['-rating_average']
     
     def get_queryset(self):
-        """Get only professional users"""
-        return User.objects.filter(
+        """Get only professional users with advanced filtering"""
+        queryset = User.objects.filter(
             is_active=True,
             user_type__in=['home_pro', 'specialist', 'crew_member']
         ).select_related('profile')
+        
+        # Custom filters from query parameters
+        min_rating = self.request.query_params.get('min_rating')
+        max_rating = self.request.query_params.get('max_rating')
+        min_hourly_rate = self.request.query_params.get('min_hourly_rate')
+        max_hourly_rate = self.request.query_params.get('max_hourly_rate')
+        min_experience = self.request.query_params.get('min_experience')
+        max_experience = self.request.query_params.get('max_experience')
+        skills = self.request.query_params.get('skills')
+        category = self.request.query_params.get('category')
+        
+        # Rating filters
+        if min_rating:
+            try:
+                queryset = queryset.filter(rating_average__gte=float(min_rating))
+            except ValueError:
+                pass
+                
+        if max_rating:
+            try:
+                queryset = queryset.filter(rating_average__lte=float(max_rating))
+            except ValueError:
+                pass
+        
+        # Hourly rate filters
+        if min_hourly_rate:
+            try:
+                queryset = queryset.filter(hourly_rate__gte=float(min_hourly_rate))
+            except ValueError:
+                pass
+                
+        if max_hourly_rate:
+            try:
+                queryset = queryset.filter(hourly_rate__lte=float(max_hourly_rate))
+            except ValueError:
+                pass
+        
+        # Experience filters
+        if min_experience:
+            try:
+                queryset = queryset.filter(experience_years__gte=int(min_experience))
+            except ValueError:
+                pass
+                
+        if max_experience:
+            try:
+                queryset = queryset.filter(experience_years__lte=int(max_experience))
+            except ValueError:
+                pass
+        
+        # Skills filter (JSON field search)
+        if skills:
+            skills_list = [skill.strip() for skill in skills.split(',')]
+            for skill in skills_list:
+                queryset = queryset.filter(skills__icontains=skill)
+        
+        # Category filter (could be based on skills or user_type)
+        if category:
+            if category in ['home_pro', 'specialist', 'crew_member']:
+                queryset = queryset.filter(user_type=category)
+            else:
+                # Search in skills for category
+                queryset = queryset.filter(skills__icontains=category)
+        
+        return queryset
     
     @extend_schema(
         operation_id="list_professionals",
         summary="List Professionals",
-        description="Get list of all available professionals",
+        description="Get list of all available professionals with advanced filtering",
         tags=["Users"],
         parameters=[
             OpenApiParameter(
@@ -352,10 +417,65 @@ class ProfessionalListView(generics.ListAPIView):
             ),
             OpenApiParameter(
                 name="search",
-                description="Search in name, company or skills",
+                description="Search in name, company, bio or skills",
                 required=False,
                 type=OpenApiTypes.STR
             ),
+            OpenApiParameter(
+                name="min_rating",
+                description="Minimum rating filter",
+                required=False,
+                type=OpenApiTypes.NUMBER
+            ),
+            OpenApiParameter(
+                name="max_rating",
+                description="Maximum rating filter",
+                required=False,
+                type=OpenApiTypes.NUMBER
+            ),
+            OpenApiParameter(
+                name="min_hourly_rate",
+                description="Minimum hourly rate filter",
+                required=False,
+                type=OpenApiTypes.NUMBER
+            ),
+            OpenApiParameter(
+                name="max_hourly_rate",
+                description="Maximum hourly rate filter",
+                required=False,
+                type=OpenApiTypes.NUMBER
+            ),
+            OpenApiParameter(
+                name="min_experience",
+                description="Minimum experience years",
+                required=False,
+                type=OpenApiTypes.INT
+            ),
+            OpenApiParameter(
+                name="max_experience",
+                description="Maximum experience years",
+                required=False,
+                type=OpenApiTypes.INT
+            ),
+            OpenApiParameter(
+                name="skills",
+                description="Skills filter (comma-separated)",
+                required=False,
+                type=OpenApiTypes.STR
+            ),
+            OpenApiParameter(
+                name="category",
+                description="Category/specialization filter",
+                required=False,
+                type=OpenApiTypes.STR
+            ),
+            OpenApiParameter(
+                name="ordering",
+                description="Sort results",
+                required=False,
+                type=OpenApiTypes.STR,
+                enum=['rating_average', '-rating_average', 'hourly_rate', '-hourly_rate', 'projects_completed', '-projects_completed', 'created_at', '-created_at']
+            )
         ]
     )
     def get(self, request, *args, **kwargs):

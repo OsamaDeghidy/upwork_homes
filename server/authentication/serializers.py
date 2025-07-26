@@ -449,16 +449,26 @@ class UserListSerializer(serializers.ModelSerializer):
 
 class ProfessionalListSerializer(serializers.ModelSerializer):
     """
-    Serializer خاص لقائمة المحترفين
+    Serializer خاص لقائمة المحترفين مع بيانات شاملة
     """
     verification_badges = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
+    completion_rate = serializers.SerializerMethodField()
+    portfolio_images = serializers.SerializerMethodField()
+    recent_reviews = serializers.SerializerMethodField()
+    response_time = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = (
             'id',
+            'username',
             'first_name',
             'last_name',
+            'full_name',
+            'display_name',
+            'email',
             'avatar',
             'user_type',
             'is_verified',
@@ -472,12 +482,71 @@ class ProfessionalListSerializer(serializers.ModelSerializer):
             'experience_years',
             'is_available',
             'projects_completed',
+            'total_earnings',
             'verification_badges',
+            'completion_rate',
+            'portfolio_images',
+            'recent_reviews',
+            'response_time',
+            'created_at',
+            'website',
+            'phone',
+            'license_number',
+            'insurance_verified',
+            'background_check_verified',
         )
     
     def get_verification_badges(self, obj):
         """Get user verification badges"""
         return obj.get_verification_badge()
+    
+    def get_full_name(self, obj):
+        """Get user full name"""
+        return obj.get_full_name()
+    
+    def get_display_name(self, obj):
+        """Get user display name"""
+        return obj.get_display_name()
+    
+    def get_completion_rate(self, obj):
+        """Get profile completion rate"""
+        return obj.get_completion_rate()
+    
+    def get_portfolio_images(self, obj):
+        """Get portfolio images from UserProfile"""
+        try:
+            if hasattr(obj, 'profile') and obj.profile.portfolio_images:
+                return obj.profile.portfolio_images[:3]  # Return first 3 images
+            return []
+        except:
+            return []
+    
+    def get_recent_reviews(self, obj):
+        """Get recent reviews for this professional"""
+        try:
+            from reviews.models import Review
+            reviews = Review.objects.filter(
+                professional=obj
+            ).order_by('-created_at')[:3]
+            
+            return [{
+                'id': review.id,
+                'rating': review.rating,
+                'comment': review.comment[:100] + '...' if len(review.comment) > 100 else review.comment,
+                'client_name': review.client.get_display_name() if review.client else 'Anonymous',
+                'created_at': review.created_at
+            } for review in reviews]
+        except:
+            return []
+    
+    def get_response_time(self, obj):
+        """Get average response time (mock data for now)"""
+        # This could be calculated from messaging data
+        # For now, return a mock value based on user activity
+        if obj.is_available:
+            return "Usually responds within 2 hours"
+        else:
+            return "Usually responds within 24 hours"
 
 
 class PasswordChangeSerializer(serializers.Serializer):

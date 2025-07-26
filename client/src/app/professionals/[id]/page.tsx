@@ -19,7 +19,11 @@ import {
   ThumbsUp,
   Eye,
   Grid,
-  List
+  List,
+  Loader2,
+  Phone,
+  Mail,
+  Globe
 } from 'lucide-react';
 
 export default function ProfessionalProfilePage() {
@@ -204,8 +208,16 @@ export default function ProfessionalProfilePage() {
   const portfolioCategories = ['all', 'Kitchen Remodeling', 'Bathroom Renovation', 'Interior Design'];
   
   const filteredPortfolio = selectedCategory === 'all' 
-    ? professional.portfolio 
-    : professional.portfolio.filter(item => item.category === selectedCategory);
+    ? (professional?.portfolio || []) 
+    : (professional?.portfolio || []).filter(item => item.category === selectedCategory);
+
+  // Get portfolio statistics
+  const portfolioStats = {
+    totalProjects: professional?.portfolio?.length || 0,
+    categories: portfolioCategories.length - 1, // Exclude 'all'
+    averageRating: professional?.rating || 0,
+    completionRate: professional?.successRate || 0
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -272,7 +284,7 @@ export default function ProfessionalProfilePage() {
                     <div className="flex items-center space-x-1">
                       <Star className="h-5 w-5 text-yellow-400 fill-current" />
                       <span className="text-lg font-semibold text-dark-900">{professional.rating}</span>
-                      <span className="text-dark-600">({professional.reviews.length} reviews)</span>
+                      <span className="text-dark-600">({professional.reviewsCount} reviews)</span>
                     </div>
                     <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
                       {professional.role}
@@ -348,7 +360,12 @@ export default function ProfessionalProfilePage() {
             {/* Portfolio */}
             <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-heading font-semibold text-xl text-dark-900">Portfolio</h3>
+                <div>
+                  <h3 className="font-heading font-semibold text-xl text-dark-900">Portfolio</h3>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {portfolioStats.totalProjects} projects • {portfolioStats.categories} categories
+                  </p>
+                </div>
                 <div className="flex items-center space-x-4">
                   <select 
                     value={selectedCategory}
@@ -441,10 +458,17 @@ export default function ProfessionalProfilePage() {
 
             {/* Reviews */}
             <div className="bg-white rounded-2xl shadow-upwork border border-gray-200 p-6">
-              <h3 className="font-heading font-semibold text-xl text-dark-900 mb-6">Client Reviews</h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-heading font-semibold text-xl text-dark-900">Client Reviews</h3>
+                <div className="flex items-center space-x-2">
+                  <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                  <span className="text-lg font-semibold">{professional.rating}</span>
+                  <span className="text-gray-600">({professional.reviewsCount} reviews)</span>
+                </div>
+              </div>
               
               <div className="space-y-6">
-                {professional.reviews.map((review) => (
+                {(professional?.reviews || []).map((review) => (
                   <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0 last:pb-0">
                     <div className="flex items-start space-x-4">
                       <img
@@ -556,23 +580,23 @@ export default function ProfessionalProfilePage() {
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-dark-900 mb-2">Education</h4>
-                  <p className="text-dark-600 text-sm">{professional.education}</p>
+                  <p className="text-dark-600 text-sm">{professional?.education || 'Not specified'}</p>
                 </div>
                 
                 <div>
                   <h4 className="font-medium text-dark-900 mb-2">Experience</h4>
-                  <p className="text-dark-600 text-sm">{professional.experience}</p>
+                  <p className="text-dark-600 text-sm">{professional?.experience || 'Not specified'}</p>
                 </div>
                 
                 <div>
                   <h4 className="font-medium text-dark-900 mb-2">Service Area</h4>
-                  <p className="text-dark-600 text-sm">{professional.serviceArea}</p>
+                  <p className="text-dark-600 text-sm">{professional?.serviceArea || professional?.location || 'Not specified'}</p>
                 </div>
                 
                 <div>
                   <h4 className="font-medium text-dark-900 mb-2">Languages</h4>
                   <div className="flex flex-wrap gap-2">
-                    {professional.languages.map((lang, index) => (
+                    {(professional?.languages || []).map((lang, index) => (
                       <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
                         {lang}
                       </span>
@@ -583,8 +607,42 @@ export default function ProfessionalProfilePage() {
                 <div>
                   <h4 className="font-medium text-dark-900 mb-2">Availability</h4>
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-dark-600 text-sm">{professional.availability}</span>
+                    <div className={`w-2 h-2 rounded-full ${
+                      professional?.online ? 'bg-green-500' : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-dark-600 text-sm">{professional?.availability || 'Not available'}</span>
+                  </div>
+                </div>
+                
+                {/* Contact Information */}
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-dark-900 mb-3">Contact Information</h4>
+                  <div className="space-y-2">
+                    {professional?.phone && (
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Phone className="h-4 w-4 text-gray-400" />
+                        <span className="text-dark-600">{professional.phone}</span>
+                      </div>
+                    )}
+                    {professional?.email && (
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Mail className="h-4 w-4 text-gray-400" />
+                        <span className="text-dark-600">{professional.email}</span>
+                      </div>
+                    )}
+                    {professional?.website && (
+                      <div className="flex items-center space-x-2 text-sm">
+                        <Globe className="h-4 w-4 text-gray-400" />
+                        <a 
+                          href={professional.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          {professional.website}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -595,7 +653,7 @@ export default function ProfessionalProfilePage() {
               <h3 className="font-heading font-semibold text-lg text-dark-900 mb-4">Badges & Achievements</h3>
               
               <div className="grid grid-cols-2 gap-3">
-                {professional.badges.map((badge, index) => (
+                {(professional?.badges || []).map((badge, index) => (
                   <div key={index} className="bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-200 rounded-lg p-3 text-center">
                     <Award className="h-6 w-6 text-primary-600 mx-auto mb-1" />
                     <span className="text-sm font-medium text-dark-900">{badge}</span>
@@ -608,4 +666,4 @@ export default function ProfessionalProfilePage() {
       </div>
     </div>
   );
-} 
+}

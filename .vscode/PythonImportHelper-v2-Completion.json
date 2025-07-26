@@ -4177,6 +4177,14 @@
         "documentation": {}
     },
     {
+        "label": "Q",
+        "importPath": "django.db.models",
+        "description": "django.db.models",
+        "isExtraImport": true,
+        "detail": "django.db.models",
+        "documentation": {}
+    },
+    {
         "label": "Avg",
         "importPath": "django.db.models",
         "description": "django.db.models",
@@ -6522,7 +6530,7 @@
         "kind": 6,
         "importPath": "server.authentication.serializers",
         "description": "server.authentication.serializers",
-        "peekOfCode": "class ProfessionalListSerializer(serializers.ModelSerializer):\n    \"\"\"\n    Serializer خاص لقائمة المحترفين\n    \"\"\"\n    verification_badges = serializers.SerializerMethodField()\n    class Meta:\n        model = User\n        fields = (\n            'id',\n            'first_name',",
+        "peekOfCode": "class ProfessionalListSerializer(serializers.ModelSerializer):\n    \"\"\"\n    Serializer خاص لقائمة المحترفين مع بيانات شاملة\n    \"\"\"\n    verification_badges = serializers.SerializerMethodField()\n    full_name = serializers.SerializerMethodField()\n    display_name = serializers.SerializerMethodField()\n    completion_rate = serializers.SerializerMethodField()\n    portfolio_images = serializers.SerializerMethodField()\n    recent_reviews = serializers.SerializerMethodField()",
         "detail": "server.authentication.serializers",
         "documentation": {}
     },
@@ -6630,7 +6638,7 @@
         "kind": 6,
         "importPath": "server.authentication.views",
         "description": "server.authentication.views",
-        "peekOfCode": "class ProfessionalListView(generics.ListAPIView):\n    \"\"\"\n    Professionals List\n    \"\"\"\n    serializer_class = ProfessionalListSerializer\n    permission_classes = [IsAuthenticated]\n    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]\n    filterset_fields = ['user_type', 'is_verified', 'location', 'is_available']\n    search_fields = ['first_name', 'last_name', 'company_name', 'skills', 'specialization']\n    ordering_fields = ['rating_average', 'hourly_rate', 'projects_completed']",
+        "peekOfCode": "class ProfessionalListView(generics.ListAPIView):\n    \"\"\"\n    Professionals List with Advanced Filtering\n    \"\"\"\n    serializer_class = ProfessionalListSerializer\n    permission_classes = [AllowAny]\n    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]\n    filterset_fields = ['user_type', 'is_verified', 'location', 'is_available']\n    search_fields = ['first_name', 'last_name', 'company_name', 'skills', 'bio']\n    ordering_fields = ['rating_average', 'hourly_rate', 'projects_completed', 'created_at']",
         "detail": "server.authentication.views",
         "documentation": {}
     },
@@ -10906,6 +10914,15 @@
         "importPath": "server.proposals.views",
         "description": "server.proposals.views",
         "peekOfCode": "def reject_proposal(request, proposal_id):\n    \"\"\"Reject a proposal\"\"\"\n    try:\n        proposal = get_object_or_404(Proposal, id=proposal_id)\n        # Check if user is project owner\n        if proposal.project.client != request.user:\n            return Response(\n                {'error': 'Permission denied'}, \n                status=status.HTTP_403_FORBIDDEN\n            )",
+        "detail": "server.proposals.views",
+        "documentation": {}
+    },
+    {
+        "label": "professional_proposals",
+        "kind": 2,
+        "importPath": "server.proposals.views",
+        "description": "server.proposals.views",
+        "peekOfCode": "def professional_proposals(request):\n    \"\"\"Get all proposals for the authenticated professional\"\"\"\n    try:\n        # Check if user is a professional\n        if not request.user.is_professional():\n            return Response(\n                {'error': 'User is not a professional'}, \n                status=status.HTTP_403_FORBIDDEN\n            )\n        # Get all proposals for this professional",
         "detail": "server.proposals.views",
         "documentation": {}
     },

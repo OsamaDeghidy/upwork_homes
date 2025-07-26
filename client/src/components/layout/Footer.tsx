@@ -49,10 +49,7 @@ export default function Footer() {
                 <Home className="h-8 w-8 text-primary-400" />
                 <div className="absolute -top-1 -right-1 h-3 w-3 bg-primary-400 rounded-full"></div>
               </div>
-              <div className="font-heading font-bold text-xl">
-                A-List
-                <span className="text-primary-400"> Home Pros</span>
-              </div>
+             
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
               The world&apos;s work marketplace. We connect businesses with independent professionals and agencies around the globe.

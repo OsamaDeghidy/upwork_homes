@@ -112,10 +112,7 @@ export default function Header() {
                 className="h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
               />
             </div>
-            <div className="font-heading font-bold text-2xl">
-              <span className="text-gradient-primary">A-List</span>
-              <span className="text-dark-700"> Home Pros</span>
-            </div>
+           
           </Link>
 
           {/* Desktop Navigation */}
