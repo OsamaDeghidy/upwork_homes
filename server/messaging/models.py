@@ -1,9 +1,7 @@
 from django.db import models
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.utils import timezone
 import uuid
-
-User = get_user_model()
 
 
 class Conversation(models.Model):
@@ -11,7 +9,7 @@ class Conversation(models.Model):
     conversation_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     
     # Participants
-    participants = models.ManyToManyField(User, related_name='conversations')
+    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')
     
     # Project reference (optional)
     project = models.ForeignKey(
@@ -40,7 +38,7 @@ class Conversation(models.Model):
     last_message_at = models.DateTimeField(auto_now_add=True)
     last_message = models.TextField(blank=True)
     last_message_sender = models.ForeignKey(
-        User, 
+        settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
@@ -98,7 +96,7 @@ class Message(models.Model):
     
     message_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
     
     # Message content
     content = models.TextField(blank=True)
@@ -193,7 +191,7 @@ class MessageAttachment(models.Model):
 
 class MessageReadStatus(models.Model):
     """حالة قراءة الرسائل"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='read_statuses')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='read_statuses')
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='read_statuses')
     read_at = models.DateTimeField(auto_now_add=True)
     
@@ -209,7 +207,7 @@ class MessageReadStatus(models.Model):
 
 class ConversationReadTime(models.Model):
     """آخر وقت قراءة للمحادثة"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='last_read_times')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='last_read_times')
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='read_times')
     last_read_at = models.DateTimeField(default=timezone.now)
     
@@ -237,7 +235,7 @@ class MessageReaction(models.Model):
     ]
     
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='reactions')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='message_reactions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='message_reactions')
     reaction = models.CharField(max_length=10, choices=REACTION_TYPES)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -254,8 +252,8 @@ class MessageReaction(models.Model):
 
 class BlockedUser(models.Model):
     """المستخدمون المحظورون"""
-    blocker = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocked_users')
-    blocked = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocked_by')
+    blocker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='blocked_users')
+    blocked = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='blocked_by')
     reason = models.TextField(blank=True)
     
     blocked_at = models.DateTimeField(auto_now_add=True)
@@ -272,7 +270,7 @@ class BlockedUser(models.Model):
 
 class ConversationSettings(models.Model):
     """إعدادات المحادثة"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversation_settings')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='conversation_settings')
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='user_settings')
     
     # Notification settings
@@ -304,7 +302,7 @@ class ConversationSettings(models.Model):
 class TypingIndicator(models.Model):
     """مؤشر الكتابة"""
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='typing_indicators')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='typing_indicators')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='typing_indicators')
     
     started_at = models.DateTimeField(auto_now_add=True)
     last_activity = models.DateTimeField(auto_now=True)

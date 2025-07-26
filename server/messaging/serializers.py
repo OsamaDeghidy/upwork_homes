@@ -55,8 +55,8 @@ class MessageSerializer(serializers.ModelSerializer):
     """Serializer للرسائل"""
     sender = UserBasicSerializer(read_only=True)
     is_read = serializers.SerializerMethodField()
-    attachments = MessageAttachmentSerializer(many=True, read_only=True)
-    reactions = MessageReactionSerializer(many=True, read_only=True)
+    attachments = MessageAttachmentSerializer(many=True, read_only=True, source='attachments.all')
+    reactions = MessageReactionSerializer(many=True, read_only=True, source='reactions.all')
     reply_to = serializers.SerializerMethodField()
     
     class Meta:
@@ -93,13 +93,11 @@ class MessageSerializer(serializers.ModelSerializer):
     
     def validate_content(self, value):
         """Validate message content"""
-        if not value or not value.strip():
-            raise serializers.ValidationError("Message content cannot be empty")
-        
-        if len(value) > 2000:
+        # Allow empty content if there are attachments
+        if value and len(value) > 2000:
             raise serializers.ValidationError("Message content is too long")
         
-        return value.strip()
+        return value.strip() if value else ''
 
 
 class MessageCreateSerializer(serializers.ModelSerializer):
@@ -159,6 +157,16 @@ class MessageCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Reply message not found")
         
         return value
+    
+    def validate(self, data):
+        """Validate that either content or attachments are provided"""
+        content = data.get('content', '').strip()
+        attachments = data.get('attachments', [])
+        
+        if not content and not attachments:
+            raise serializers.ValidationError("Either message content or attachments must be provided")
+        
+        return data
     
     def create(self, validated_data):
         attachments = validated_data.pop('attachments', [])
@@ -475,4 +483,4 @@ class ConversationSearchSerializer(serializers.Serializer):
 
 
 # Import models for validation
-from django.db import models 
+from django.db import models

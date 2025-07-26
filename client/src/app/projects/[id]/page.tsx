@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -32,6 +32,7 @@ import { Project } from '@/lib/types';
 
 export default function ProjectDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const projectSlug = params.id as string;
   
   const [project, setProject] = useState<Project | null>(null);
@@ -305,7 +306,7 @@ export default function ProjectDetailsPage() {
 
   const handleMessageFreelancer = (freelancerId: number) => {
     // Navigate to messages page with the freelancer
-    window.location.href = `http://localhost:3000/messages?freelancer=${freelancerId}`;
+    router.push(`/messages?freelancer=${freelancerId}`);
   };
 
   const handleProposalSubmit = (e: React.FormEvent) => {
@@ -562,7 +563,7 @@ export default function ProjectDetailsPage() {
                             
                             <div className="flex items-center space-x-3">
                               <button
-                                onClick={() => handleMessageFreelancer(proposal.freelancer.id || proposal.id)}
+                                onClick={() => handleMessageFreelancer(proposal.professional?.id || proposal.id)}
                                 className="flex items-center space-x-2 px-4 py-2 text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 transition-colors duration-200"
                               >
                                 <MessageCircle className="h-4 w-4" />

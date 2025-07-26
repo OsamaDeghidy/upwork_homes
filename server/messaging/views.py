@@ -9,6 +9,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from .models import Conversation, Message, MessageReadStatus, ConversationReadTime, MessageReaction, MessageAttachment
 from .serializers import (
     ConversationSerializer, ConversationDetailSerializer, ConversationCreateSerializer,
@@ -136,7 +138,7 @@ class MessageListView(generics.ListAPIView):
         return Message.objects.filter(
             conversation_id=conversation_id,
             conversation__participants=self.request.user
-        ).select_related('sender')
+        ).select_related('sender').prefetch_related('attachments', 'reactions')
     
     @extend_schema(
         operation_id="list_conversation_messages",
@@ -177,8 +179,43 @@ class MessageCreateView(generics.CreateAPIView):
         conversation.updated_at = timezone.now()
         conversation.save()
         
-        # Here you would send real-time notifications via WebSocket
-        # For now, we'll just create the message
+        # Send real-time notification via WebSocket
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            # Create simplified message data for WebSocket
+            message_data = {
+                'id': message.id,
+                'conversation': message.conversation.id,
+                'sender': {
+                    'id': message.sender.id,
+                    'username': message.sender.username,
+                    'first_name': message.sender.first_name,
+                    'last_name': message.sender.last_name,
+                    'avatar': message.sender.avatar.url if message.sender.avatar else None,
+                    'user_type': getattr(message.sender, 'user_type', 'user'),
+                    'is_verified': getattr(message.sender, 'is_verified', False),
+                    'is_available': getattr(message.sender, 'is_available', True)
+                },
+                'content': message.content,
+                'message_type': message.message_type,
+                'is_read': False,
+                'is_edited': message.is_edited,
+                'is_deleted': message.is_deleted,
+                'attachments': [],
+                'reactions': [],
+                'created_at': message.created_at.isoformat(),
+                'updated_at': message.updated_at.isoformat()
+            }
+            
+            # Send to conversation group
+            conversation_group_name = f'chat_{conversation.id}'
+            async_to_sync(channel_layer.group_send)(
+                conversation_group_name,
+                {
+                    'type': 'new_message',
+                    'message': message_data
+                }
+            )
         
         return message
     

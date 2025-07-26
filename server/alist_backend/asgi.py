@@ -10,14 +10,7 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 import os
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
 from channels.security.websocket import AllowedHostsOriginValidator
-
-# Import routing configurations
-try:
-    from messaging.routing import websocket_urlpatterns
-except ImportError:
-    websocket_urlpatterns = []
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alist_backend.settings')
 
@@ -25,10 +18,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alist_backend.settings')
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
 
+# Import after Django is initialized
+from messaging.middleware import JWTAuthMiddlewareStack
+from messaging.routing import websocket_urlpatterns
+
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
     "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
+        JWTAuthMiddlewareStack(
             URLRouter(websocket_urlpatterns)
         )
     ),

@@ -42,14 +42,6 @@
         "documentation": {}
     },
     {
-        "label": "AuthMiddlewareStack",
-        "importPath": "channels.auth",
-        "description": "channels.auth",
-        "isExtraImport": true,
-        "detail": "channels.auth",
-        "documentation": {}
-    },
-    {
         "label": "AllowedHostsOriginValidator",
         "importPath": "channels.security.websocket",
         "description": "channels.security.websocket",
@@ -58,11 +50,35 @@
         "documentation": {}
     },
     {
+        "label": "JWTAuthMiddlewareStack",
+        "importPath": "messaging.middleware",
+        "description": "messaging.middleware",
+        "isExtraImport": true,
+        "detail": "messaging.middleware",
+        "documentation": {}
+    },
+    {
+        "label": "websocket_urlpatterns",
+        "importPath": "messaging.routing",
+        "description": "messaging.routing",
+        "isExtraImport": true,
+        "detail": "messaging.routing",
+        "documentation": {}
+    },
+    {
         "label": "Celery",
         "importPath": "celery",
         "description": "celery",
         "isExtraImport": true,
         "detail": "celery",
+        "documentation": {}
+    },
+    {
+        "label": "settings",
+        "importPath": "django.conf",
+        "description": "django.conf",
+        "isExtraImport": true,
+        "detail": "django.conf",
         "documentation": {}
     },
     {
@@ -3193,14 +3209,6 @@
         "documentation": {}
     },
     {
-        "label": "get_user_model",
-        "importPath": "django.contrib.auth",
-        "description": "django.contrib.auth",
-        "isExtraImport": true,
-        "detail": "django.contrib.auth",
-        "documentation": {}
-    },
-    {
         "label": "authenticate",
         "importPath": "django.contrib.auth",
         "description": "django.contrib.auth",
@@ -5207,6 +5215,46 @@
         "documentation": {}
     },
     {
+        "label": "database_sync_to_async",
+        "importPath": "channels.db",
+        "description": "channels.db",
+        "isExtraImport": true,
+        "detail": "channels.db",
+        "documentation": {}
+    },
+    {
+        "label": "BaseMiddleware",
+        "importPath": "channels.middleware",
+        "description": "channels.middleware",
+        "isExtraImport": true,
+        "detail": "channels.middleware",
+        "documentation": {}
+    },
+    {
+        "label": "parse_qs",
+        "importPath": "urllib.parse",
+        "description": "urllib.parse",
+        "isExtraImport": true,
+        "detail": "urllib.parse",
+        "documentation": {}
+    },
+    {
+        "label": "get_channel_layer",
+        "importPath": "channels.layers",
+        "description": "channels.layers",
+        "isExtraImport": true,
+        "detail": "channels.layers",
+        "documentation": {}
+    },
+    {
+        "label": "async_to_sync",
+        "importPath": "asgiref.sync",
+        "description": "asgiref.sync",
+        "isExtraImport": true,
+        "detail": "asgiref.sync",
+        "documentation": {}
+    },
+    {
         "label": "Decimal",
         "importPath": "decimal",
         "description": "decimal",
@@ -5484,7 +5532,7 @@
         "kind": 5,
         "importPath": "server.alist_backend.asgi",
         "description": "server.alist_backend.asgi",
-        "peekOfCode": "django_asgi_app = get_asgi_application()\napplication = ProtocolTypeRouter({\n    \"http\": django_asgi_app,\n    \"websocket\": AllowedHostsOriginValidator(\n        AuthMiddlewareStack(\n            URLRouter(websocket_urlpatterns)\n        )\n    ),\n})",
+        "peekOfCode": "django_asgi_app = get_asgi_application()\n# Import after Django is initialized\nfrom messaging.middleware import JWTAuthMiddlewareStack\nfrom messaging.routing import websocket_urlpatterns\napplication = ProtocolTypeRouter({\n    \"http\": django_asgi_app,\n    \"websocket\": AllowedHostsOriginValidator(\n        JWTAuthMiddlewareStack(\n            URLRouter(websocket_urlpatterns)\n        )",
         "detail": "server.alist_backend.asgi",
         "documentation": {}
     },
@@ -5493,7 +5541,7 @@
         "kind": 5,
         "importPath": "server.alist_backend.asgi",
         "description": "server.alist_backend.asgi",
-        "peekOfCode": "application = ProtocolTypeRouter({\n    \"http\": django_asgi_app,\n    \"websocket\": AllowedHostsOriginValidator(\n        AuthMiddlewareStack(\n            URLRouter(websocket_urlpatterns)\n        )\n    ),\n})",
+        "peekOfCode": "application = ProtocolTypeRouter({\n    \"http\": django_asgi_app,\n    \"websocket\": AllowedHostsOriginValidator(\n        JWTAuthMiddlewareStack(\n            URLRouter(websocket_urlpatterns)\n        )\n    ),\n})",
         "detail": "server.alist_backend.asgi",
         "documentation": {}
     },
@@ -8702,11 +8750,29 @@
         "documentation": {}
     },
     {
+        "label": "JWTAuthMiddleware",
+        "kind": 6,
+        "importPath": "server.messaging.middleware",
+        "description": "server.messaging.middleware",
+        "peekOfCode": "class JWTAuthMiddleware(BaseMiddleware):\n    \"\"\"JWT Authentication middleware for WebSocket connections\"\"\"\n    def __init__(self, inner):\n        super().__init__(inner)\n    async def __call__(self, scope, receive, send):\n        # Get token from query string or headers\n        token = None\n        # Try to get token from query string\n        query_string = scope.get('query_string', b'').decode()\n        if query_string:",
+        "detail": "server.messaging.middleware",
+        "documentation": {}
+    },
+    {
+        "label": "JWTAuthMiddlewareStack",
+        "kind": 2,
+        "importPath": "server.messaging.middleware",
+        "description": "server.messaging.middleware",
+        "peekOfCode": "def JWTAuthMiddlewareStack(inner):\n    \"\"\"Stack JWT auth middleware\"\"\"\n    return JWTAuthMiddleware(inner)",
+        "detail": "server.messaging.middleware",
+        "documentation": {}
+    },
+    {
         "label": "Conversation",
         "kind": 6,
         "importPath": "server.messaging.models",
         "description": "server.messaging.models",
-        "peekOfCode": "class Conversation(models.Model):\n    \"\"\"المحادثات\"\"\"\n    conversation_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)\n    # Participants\n    participants = models.ManyToManyField(User, related_name='conversations')\n    # Project reference (optional)\n    project = models.ForeignKey(\n        'projects.Project', \n        on_delete=models.CASCADE, \n        related_name='conversations',",
+        "peekOfCode": "class Conversation(models.Model):\n    \"\"\"المحادثات\"\"\"\n    conversation_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)\n    # Participants\n    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')\n    # Project reference (optional)\n    project = models.ForeignKey(\n        'projects.Project', \n        on_delete=models.CASCADE, \n        related_name='conversations',",
         "detail": "server.messaging.models",
         "documentation": {}
     },
@@ -8733,7 +8799,7 @@
         "kind": 6,
         "importPath": "server.messaging.models",
         "description": "server.messaging.models",
-        "peekOfCode": "class MessageReadStatus(models.Model):\n    \"\"\"حالة قراءة الرسائل\"\"\"\n    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='read_statuses')\n    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='read_statuses')\n    read_at = models.DateTimeField(auto_now_add=True)\n    class Meta:\n        db_table = 'message_read_status'\n        verbose_name = 'Message Read Status'\n        verbose_name_plural = 'Message Read Statuses'\n        unique_together = ['user', 'message']",
+        "peekOfCode": "class MessageReadStatus(models.Model):\n    \"\"\"حالة قراءة الرسائل\"\"\"\n    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='read_statuses')\n    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='read_statuses')\n    read_at = models.DateTimeField(auto_now_add=True)\n    class Meta:\n        db_table = 'message_read_status'\n        verbose_name = 'Message Read Status'\n        verbose_name_plural = 'Message Read Statuses'\n        unique_together = ['user', 'message']",
         "detail": "server.messaging.models",
         "documentation": {}
     },
@@ -8742,7 +8808,7 @@
         "kind": 6,
         "importPath": "server.messaging.models",
         "description": "server.messaging.models",
-        "peekOfCode": "class ConversationReadTime(models.Model):\n    \"\"\"آخر وقت قراءة للمحادثة\"\"\"\n    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='last_read_times')\n    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='read_times')\n    last_read_at = models.DateTimeField(default=timezone.now)\n    class Meta:\n        db_table = 'conversation_read_times'\n        verbose_name = 'Conversation Read Time'\n        verbose_name_plural = 'Conversation Read Times'\n        unique_together = ['user', 'conversation']",
+        "peekOfCode": "class ConversationReadTime(models.Model):\n    \"\"\"آخر وقت قراءة للمحادثة\"\"\"\n    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='last_read_times')\n    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='read_times')\n    last_read_at = models.DateTimeField(default=timezone.now)\n    class Meta:\n        db_table = 'conversation_read_times'\n        verbose_name = 'Conversation Read Time'\n        verbose_name_plural = 'Conversation Read Times'\n        unique_together = ['user', 'conversation']",
         "detail": "server.messaging.models",
         "documentation": {}
     },
@@ -8760,7 +8826,7 @@
         "kind": 6,
         "importPath": "server.messaging.models",
         "description": "server.messaging.models",
-        "peekOfCode": "class BlockedUser(models.Model):\n    \"\"\"المستخدمون المحظورون\"\"\"\n    blocker = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocked_users')\n    blocked = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocked_by')\n    reason = models.TextField(blank=True)\n    blocked_at = models.DateTimeField(auto_now_add=True)\n    class Meta:\n        db_table = 'blocked_users'\n        verbose_name = 'Blocked User'\n        verbose_name_plural = 'Blocked Users'",
+        "peekOfCode": "class BlockedUser(models.Model):\n    \"\"\"المستخدمون المحظورون\"\"\"\n    blocker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='blocked_users')\n    blocked = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='blocked_by')\n    reason = models.TextField(blank=True)\n    blocked_at = models.DateTimeField(auto_now_add=True)\n    class Meta:\n        db_table = 'blocked_users'\n        verbose_name = 'Blocked User'\n        verbose_name_plural = 'Blocked Users'",
         "detail": "server.messaging.models",
         "documentation": {}
     },
@@ -8769,7 +8835,7 @@
         "kind": 6,
         "importPath": "server.messaging.models",
         "description": "server.messaging.models",
-        "peekOfCode": "class ConversationSettings(models.Model):\n    \"\"\"إعدادات المحادثة\"\"\"\n    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversation_settings')\n    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='user_settings')\n    # Notification settings\n    notifications_enabled = models.BooleanField(default=True)\n    sound_enabled = models.BooleanField(default=True)\n    # Display settings\n    is_pinned = models.BooleanField(default=False)\n    is_muted = models.BooleanField(default=False)",
+        "peekOfCode": "class ConversationSettings(models.Model):\n    \"\"\"إعدادات المحادثة\"\"\"\n    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='conversation_settings')\n    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='user_settings')\n    # Notification settings\n    notifications_enabled = models.BooleanField(default=True)\n    sound_enabled = models.BooleanField(default=True)\n    # Display settings\n    is_pinned = models.BooleanField(default=False)\n    is_muted = models.BooleanField(default=False)",
         "detail": "server.messaging.models",
         "documentation": {}
     },
@@ -8778,16 +8844,7 @@
         "kind": 6,
         "importPath": "server.messaging.models",
         "description": "server.messaging.models",
-        "peekOfCode": "class TypingIndicator(models.Model):\n    \"\"\"مؤشر الكتابة\"\"\"\n    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='typing_indicators')\n    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='typing_indicators')\n    started_at = models.DateTimeField(auto_now_add=True)\n    last_activity = models.DateTimeField(auto_now=True)\n    class Meta:\n        db_table = 'typing_indicators'\n        verbose_name = 'Typing Indicator'\n        verbose_name_plural = 'Typing Indicators'",
-        "detail": "server.messaging.models",
-        "documentation": {}
-    },
-    {
-        "label": "User",
-        "kind": 5,
-        "importPath": "server.messaging.models",
-        "description": "server.messaging.models",
-        "peekOfCode": "User = get_user_model()\nclass Conversation(models.Model):\n    \"\"\"المحادثات\"\"\"\n    conversation_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)\n    # Participants\n    participants = models.ManyToManyField(User, related_name='conversations')\n    # Project reference (optional)\n    project = models.ForeignKey(\n        'projects.Project', \n        on_delete=models.CASCADE, ",
+        "peekOfCode": "class TypingIndicator(models.Model):\n    \"\"\"مؤشر الكتابة\"\"\"\n    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='typing_indicators')\n    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='typing_indicators')\n    started_at = models.DateTimeField(auto_now_add=True)\n    last_activity = models.DateTimeField(auto_now=True)\n    class Meta:\n        db_table = 'typing_indicators'\n        verbose_name = 'Typing Indicator'\n        verbose_name_plural = 'Typing Indicators'",
         "detail": "server.messaging.models",
         "documentation": {}
     },
@@ -8832,7 +8889,7 @@
         "kind": 6,
         "importPath": "server.messaging.serializers",
         "description": "server.messaging.serializers",
-        "peekOfCode": "class MessageSerializer(serializers.ModelSerializer):\n    \"\"\"Serializer للرسائل\"\"\"\n    sender = UserBasicSerializer(read_only=True)\n    is_read = serializers.SerializerMethodField()\n    attachments = MessageAttachmentSerializer(many=True, read_only=True)\n    reactions = MessageReactionSerializer(many=True, read_only=True)\n    reply_to = serializers.SerializerMethodField()\n    class Meta:\n        model = Message\n        fields = [",
+        "peekOfCode": "class MessageSerializer(serializers.ModelSerializer):\n    \"\"\"Serializer للرسائل\"\"\"\n    sender = UserBasicSerializer(read_only=True)\n    is_read = serializers.SerializerMethodField()\n    attachments = MessageAttachmentSerializer(many=True, read_only=True, source='attachments.all')\n    reactions = MessageReactionSerializer(many=True, read_only=True, source='reactions.all')\n    reply_to = serializers.SerializerMethodField()\n    class Meta:\n        model = Message\n        fields = [",
         "detail": "server.messaging.serializers",
         "documentation": {}
     },
